@@ -1,0 +1,325 @@
+group 'com.zyc'
+version '1.0-SNAPSHOT'
+
+wrapper {
+    gradleVersion = '4.10.2' //version required
+}
+
+def scalaVersion = "2.11.12"
+def sparkVersion = "2.4.4"
+ext {
+    baseScala = scalaVersion.substring(0, scalaVersion.lastIndexOf("."))
+}
+
+apply plugin: 'java'
+apply plugin: 'scala'
+apply plugin: 'idea'
+apply plugin: 'application'
+
+sourceCompatibility = 1.8
+
+repositories {
+    maven {
+        url 'http://maven.aliyun.com/nexus/content/groups/public/'
+    }
+//    maven {
+//        url ' http://repo.hortonworks.com/content/groups/public/'
+//    }
+    mavenCentral()
+}
+
+dependencies {
+    testCompile "org.scalatest:scalatest_$baseScala:3.0.5"
+    testCompile "org.scala-lang.modules:scala-xml_$baseScala:1.1.0"
+    testCompile 'junit:junit:4.12'
+    testRuntime "org.pegdown:pegdown:1.4.2"
+
+    compile files('libs/ojdbc6.jar')
+   // compile files('libs/hive-warehouse-connector-assembly-1.0.0.3.1.0.0-78.jar')
+
+    compile "org.scala-lang:scala-library:$scalaVersion"
+    compile "org.scala-lang:scala-reflect:$scalaVersion"
+
+    //spark
+    compile (group: 'org.apache.spark', name: "spark-core_$baseScala", version: "$sparkVersion"){
+        exclude(module: 'jackson-databind')
+        exclude(module: 'jackson-module-scala_2.11')
+    }
+
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.9.2'
+    compile group: 'com.fasterxml.jackson.module', name: 'jackson-module-scala_2.11', version: '2.9.2'
+
+    compile group: 'com.alibaba', name: 'fastjson', version: '1.2.47'
+    compile group: 'com.google.code.gson', name: 'gson', version: '2.8.2'
+
+    compile(group: 'org.apache.spark', name: "spark-sql_$baseScala", version: "$sparkVersion") {
+        exclude(module: 'commons-compiler')
+    }
+    compile group: 'org.codehaus.janino', name: 'commons-compiler', version: '3.0.8'
+
+    compile group: 'org.apache.spark', name: "spark-hive-thriftserver_$baseScala", version: "$sparkVersion"
+
+    compile group: 'org.apache.spark', name: "spark-hive_$baseScala", version: "$sparkVersion"
+    compile group: 'org.apache.hive', name: 'hive-jdbc', version: '1.2.1'
+    compile (group: 'org.spark-project.hive', name: 'hive-jdbc', version: '1.2.1.spark2'){
+        exclude(module: 'servelt-api')
+    }
+
+    compile group: 'org.apache.spark', name: "spark-streaming_$baseScala", version: "$sparkVersion"
+    compile group: 'org.apache.spark', name: "spark-streaming-kafka-0-10_$baseScala", version: "$sparkVersion"
+
+    // https://mvnrepository.com/artifact/org.apache.spark/spark-mllib
+    compile group: 'org.apache.spark', name: 'spark-mllib_2.11', version: '2.4.4'
+
+
+    // https://mvnrepository.com/artifact/com.crealytics/spark-excel
+    compile group: 'com.crealytics', name: 'spark-excel_2.11', version: '0.13.1'
+
+    // https://mvnrepository.com/artifact/com.databricks/spark-xml
+    compile group: 'com.databricks', name: 'spark-xml_2.11', version: '0.9.0'
+
+    // https://mvnrepository.com/artifact/org.elasticsearch/elasticsearch-spark-20
+    compile group: 'org.elasticsearch', name: 'elasticsearch-spark-20_2.11', version: '7.6.0'
+
+    // https://mvnrepository.com/artifact/org.mongodb.spark/mongo-spark-connector
+    compile group: 'org.mongodb.spark', name: 'mongo-spark-connector_2.11', version: '2.4.1'
+
+    compile group: 'org.mongodb', name: 'mongo-java-driver', version: '3.12.2'
+
+    //netty
+    //compile group: 'mysql', name: 'mysql-connector-java', version: '5.1.46'
+    compile group: 'io.netty', name: 'netty-all', version: '4.1.23.Final'
+
+    //json4s
+    compile group: 'org.json4s', name: "json4s-native_$baseScala", version: '3.5.4'
+    compile group: 'org.json4s', name: 'json4s-jackson_2.11', version: '3.5.4'
+    
+    //config
+    compile group: 'com.typesafe', name: 'config', version: '1.3.2'
+
+    //httpclient
+    compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.5'
+
+    compile group: 'org.apache.commons', name: 'commons-email', version: '1.2'
+
+    //poi
+    compile group: 'org.apache.poi', name: 'poi', version: '4.0.1'
+    compile group: 'org.apache.poi', name: 'poi-ooxml', version: '4.0.1'
+
+    //mysql
+    compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.11'
+
+    //delta
+    compile group: 'io.delta', name: 'delta-core_2.11', version: '0.5.0'
+
+    //compile files('libs/shc-core-1.1.1-2.1-s_2.11.jar')
+
+    // https://mvnrepository.com/artifact/com.hortonworks/shc-core
+   // compile group: 'com.hortonworks', name: 'shc-core', version: '1.1.1-2.1-s_2.11'
+
+    // https://mvnrepository.com/artifact/com.hortonworks/shc
+    //compile group: 'com.hortonworks', name: 'shc', version: '1.1.1-2.1-s_2.11', ext: 'pom'
+
+
+    //compile group: 'org.apache.hbase.connectors.spark', name: 'hbase-spark', version: '1.0.0'
+
+
+
+    // https://mvnrepository.com/artifact/it.nerdammer.bigdata/spark-hbase-connector
+    //compile group: 'it.nerdammer.bigdata', name: 'spark-hbase-connector_2.10', version: '1.0.3'
+
+    //hbase
+    compile (group: 'org.apache.hbase', name: 'hbase-mapreduce', version: '2.0.0'){
+        exclude(module: 'hbase-client')
+        exclude(module: 'hbase-server')
+        exclude(module: 'hbase-protocol')
+        exclude(module: 'hbase-common')
+    }
+    compile (group: 'org.apache.hbase', name: 'hbase-client', version: '1.3.6'){
+        exclude(module: 'hbase-common')
+    }
+    // https://mvnrepository.com/artifact/org.apache.hbase/hbase-common
+    compile group: 'org.apache.hbase', name: 'hbase-common', version: '1.3.6'
+
+    compile (group: 'org.apache.hbase', name: 'hbase-server', version: '1.3.6'){
+        exclude(module: 'servlet-api-2.5')
+    }
+    // https://mvnrepository.com/artifact/org.apache.hbase/hbase-protocol
+    compile group: 'org.apache.hbase', name: 'hbase-protocol', version: '1.3.6'
+
+//    compile (group: 'org.apache.phoenix', name: 'phoenix-client', version: '4.14.3-HBase-1.3'){
+//        exclude(module: 'phoenix-flume')
+//    }
+    // https://mvnrepository.com/artifact/org.apache.phoenix/phoenix-core
+//    compile (group: 'org.apache.phoenix', name: 'phoenix-core', version: '4.14.3-HBase-1.3'){
+//        exclude(module: 'hbase-client')
+//        exclude(module: 'hbase-protocol')
+//        exclude(module: 'hbase-common')
+//    }
+    // https://mvnrepository.com/artifact/org.apache.phoenix/phoenix-spark
+//    compile (group: 'org.apache.phoenix', name: 'phoenix-spark', version: '4.14.3-HBase-1.3'){
+//        exclude(module: 'hbase-client')
+//        exclude(module: 'hbase-protocol')
+//        exclude(module: 'hbase-common')
+//    }
+
+
+    compile group: 'com.github.jsqlparser', name: 'jsqlparser', version: '3.1'
+
+    // https://mvnrepository.com/artifact/com.redislabs/spark-redis
+    compile group: 'com.redislabs', name: 'spark-redis_2.11', version: '2.4.2'
+
+    // https://mvnrepository.com/artifact/com.datastax.spark/spark-cassandra-connector
+    compile group: 'com.datastax.spark', name: 'spark-cassandra-connector_2.11', version: '2.4.3'
+
+    compile group: 'com.springml', name: 'spark-sftp_2.11', version: '1.1.4'
+
+    compile group: 'org.apache.kudu', name: 'kudu-spark2_2.11', version: '1.11.1'
+
+    // https://mvnrepository.com/artifact/org.apache.spark/spark-streaming-flume
+    compile group: 'org.apache.spark', name: 'spark-streaming-flume_2.11', version: '2.4.4'
+
+    // https://mvnrepository.com/artifact/org.apache.spark/spark-streaming-flume-sink
+    compile group: 'org.apache.spark', name: 'spark-streaming-flume-sink_2.11', version: '2.4.4'
+
+    // https://mvnrepository.com/artifact/com.lucidworks.spark/spark-solr
+   // compile group: 'com.lucidworks.spark', name: 'spark-solr', version: '3.7.6'
+
+
+
+}
+
+
+//此task 为了解决wind 下 gradle test command too long
+task classpathJar(type: Jar) {
+
+    inputs.files sourceSets.test.runtimeClasspath
+    archiveName = "zyc-classpath.jar"
+    doFirst {
+        // If run in configuration phase, some artifacts may not exist yet (after clean)
+        // and File.toURI can’t figure out what is directory to add the critical trailing slash.
+        manifest {
+            def classpath = sourceSets.test.runtimeClasspath.files
+            attributes "Class-Path": classpath.collect {f -> f.toURI().toString()}.join(" ")
+        }
+    }
+}
+
+//此task 使用classpath=sourceSets.test.runtimeClasspath 会导致command too long ,原因classpath 中存在大量的路径
+// 解决方案:新建一个文件zyc-classpath.jar把classpath 路径放入到此文件中,classpath 直接引用文件
+task scalaTest(dependsOn: ['testClasses'], type: JavaExec) {
+    main = 'org.scalatest.tools.Runner'
+    //scalaTest 参数配置详解---->http://www.scalatest.org/user_guide/using_the_runner
+    args = ['-R', 'build/classes/scala/test', '-w','com.zyc.zdh','-o', '-h', 'build/reports']
+    classpath = classpathJar.outputs.files
+}
+
+test.dependsOn scalaTest
+
+sourceSets {
+    mainClassName='com.zyc.SystemInit'
+    main {
+        scala {
+            srcDirs = ['src/main/scala']
+        }
+    }
+    test {
+        scala {
+            srcDirs = ['src/test/scala']
+        }
+    }
+}
+//
+jar {
+//    from {
+//        //添加依懒到打包文件
+//        zip64 = true
+//        configurations.compile.findAll {
+//                    it.name.contains("delta-core")|| it.name.contains("mysql")||
+//                            it.name.contains("jsqlparser")||it.name.contains("mongo")||
+//                            it.name.contains("elasticsearch")||it.name.contains("oracle")||
+//                            it.name.contains("hbase")||it.name.contains("phoenix")||
+//                            it.name.contains("config")||it.name.contains("cassandra")||
+//                            it.name.contains("kudu")||it.name.contains("flume")||
+//                            it.name.contains("ojdbc")
+//        }.collect { it.isDirectory() ? it : zipTree(it) }
+//    }
+    manifest {
+        attributes 'Main-Class': 'com.zyc.SystemInit'
+    }
+}
+
+// 复制依赖jar至build/libs
+task copyJar(type: Copy) {
+    // from configurations.runtime
+    from configurations.runtime
+    into('release/libs')
+    exclude 'hadoop**.jar','spark-core*','spark-catalyst*','spark-tags*','spark-network*','spark-unsafe*',
+            'spark-mllib*','spark-sql*'
+}
+
+// 复制依赖jar至build/libs
+task copyJar2(type: Copy) {
+    // from configurations.runtime
+    from ("build/libs")
+    into('release/libs')
+}
+
+task clearJar(type: Delete) {
+    delete 'release/libs'
+}
+
+task clearHadoopJar(type: Delete) {
+    delete 'release/libs' , 'hadoop*'
+    followSymlinks = true
+}
+
+// 打包
+task release(type: Copy, dependsOn: [build,clearJar,jar,copyJar,copyJar2])
+
+
+configurations {
+    jar.archiveName = "$rootProject.name" + ".jar"
+}
+
+
+println "Building project with Scala version $baseScala" + new Date()
+
+//必不可少-如果没有则项目本身的代码不会打进去
+tasks.withType(ScalaCompile) {
+    scalaCompileOptions.additionalParameters = [
+            "-deprecation",
+            "-unchecked",
+            "-encoding", "utf8",
+            "-Xlog-reflective-calls",
+            "-feature",
+            "-language:postfixOps",
+            "-language:implicitConversions",
+            "-language:existentials",
+            "-Xlint:by-name-right-associative",
+            "-Xlint:delayedinit-select",
+            "-Xlint:doc-detached",
+            "-Xlint:missing-interpolator",
+            "-Xlint:nullary-override",
+            "-Xlint:nullary-unit",
+            "-Xlint:option-implicit",
+            "-Xlint:package-object-classes",
+            "-Xlint:poly-implicit-overload",
+            "-Xlint:private-shadow",
+            "-Xlint:stars-align",
+            "-Xlint:type-parameter-shadow",
+            "-Xlint:unsound-match",
+    ]
+
+    if (baseScala != '2.11') {
+        scalaCompileOptions.additionalParameters += [
+                "-Xlint:constant",
+                "-Xlint:unused"
+        ]
+    }
+
+    configure(scalaCompileOptions.forkOptions) {
+        memoryMaximumSize = '2g'
+        //jvmArgs = ['-Xss2m', '-XX:MaxPermSize=512m']
+    }
+}

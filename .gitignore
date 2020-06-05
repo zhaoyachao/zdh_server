@@ -1,0 +1,10 @@
+.gradle/
+.idea/
+build/
+derby.log
+out/
+metastore_db/
+spark-warehouse/
+META-INF/
+gradle/
+release/
