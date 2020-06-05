@@ -40,3 +40,6 @@
     
 # 停止脚本
      kill `ps -ef |grep SparkSubmit |grep spark_zdh |awk -F ' ' '{print $2}'`
+
+# 个人联系方式
+    邮件：1209687056@qq.com
