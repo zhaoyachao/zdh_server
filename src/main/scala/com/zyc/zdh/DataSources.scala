@@ -26,25 +26,34 @@ object DataSources {
     * @param inputCondition   输入数据源条件
     * @param inputCols        //输入字段
     * @param outPut           输出数据源类型
-    * @param outputOptionions 输出数据源参数
+    * @param outputOptions 输出数据源参数
     * @param outputCols       输出字段
     * @param sql              清空sql 语句
     */
   def DataHandler(spark: SparkSession, task_logs_id: String, dispatchOption: Map[String, Any], etlTaskInfo: Map[String, Any], inPut: String, inputOptions: Map[String, Any], inputCondition: String,
                   inputCols: Array[String],
-                  outPut: String, outputOptionions: Map[String, Any], outputCols: Array[Map[String, String]], sql: String): Unit = {
+                  outPut: String, outputOptions: Map[String, Any], outputCols: Array[Map[String, String]], sql: String): Unit = {
     implicit val dispatch_task_id = dispatchOption.getOrElse("job_id", "001").toString
     val etl_date = JsonUtil.jsonToMap(dispatchOption.getOrElse("params", "").toString).getOrElse("ETL_DATE", "").toString;
     val owner = dispatchOption.getOrElse("owner", "001").toString
     val job_context = dispatchOption.getOrElse("job_context", "001").toString
     MDC.put("job_id", dispatch_task_id)
+    val spark_tmp=spark.newSession()
     try {
       logger.info("[数据采集]:数据采集开始")
       logger.info("[数据采集]:数据采集日期:" + etl_date)
-      val df = inPutHandler(spark, task_logs_id, dispatchOption, etlTaskInfo, inPut, inputOptions, inputCondition, inputCols, outPut, outputOptionions, outputCols, sql)
+      val fileType=etlTaskInfo.getOrElse("file_type_output","csv").toString
+      val encoding=etlTaskInfo.getOrElse("encoding_output","utf-8").toString
+      val sep=etlTaskInfo.getOrElse("sep_output",",").toString
+      val outputOptions_tmp=outputOptions.asInstanceOf[Map[String,String]].+("fileType"->fileType,"encoding"->encoding,"sep"->sep)
+
+      val df = inPutHandler(spark_tmp, task_logs_id, dispatchOption, etlTaskInfo, inPut, inputOptions, inputCondition, inputCols, outPut, outputOptions_tmp, outputCols, sql)
+
+
+
 
       if (!inPut.toString.toLowerCase.equals("kafka") && !inPut.toString.toLowerCase.equals("flume")) {
-        outPutHandler(spark, df, outPut, outputOptionions, outputCols, sql)
+        outPutHandler(spark_tmp, df, outPut, outputOptions_tmp, outputCols, sql)
       } else {
         logger.info("[数据采集]:数据采集检测是实时采集,输出数据源为jdbc")
       }
@@ -52,8 +61,8 @@ object DataSources {
       MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "finish", etl_date, "100")
       if (outPut.trim.toLowerCase.equals("外部下载")) {
         //获取路径信息
-        val root_path = outputOptionions.getOrElse("root_path", "")
-        val paths = outputOptionions.getOrElse("paths", "")
+        val root_path = outputOptions_tmp.getOrElse("root_path", "")
+        val paths = outputOptions_tmp.getOrElse("paths", "")
         MariadbCommon.insertZdhDownloadInfo(root_path + "/" + paths + ".csv", Timestamp.valueOf(etl_date), owner, job_context)
       }
       logger.info("[数据采集]:数据采集完成")
@@ -67,6 +76,7 @@ object DataSources {
       }
     } finally {
       MDC.remove("job_id")
+      SparkSession.clearActiveSession()
     }
 
   }
@@ -83,6 +93,7 @@ object DataSources {
       case a=>a.split(",")
     }
     MDC.put("job_id", dispatch_task_id)
+    val spark_tmp=spark.newSession()
     val tables = new util.ArrayList[String]();
     try {
       logger.info("[数据采集]:[多源]:数据采集开始")
@@ -123,7 +134,7 @@ object DataSources {
           throw new Exception("多源任务对应的单源任务说明必须包含# 格式 'etl任务说明#临时表名'")
         }
 
-        val ds = inPutHandler(spark, task_logs_id, dispatchOption, etlTaskInfo, inPut, dsi_Input ++ inputOptions, filter, inputCols, null, null, outPutCols_tmp, null)
+        val ds = inPutHandler(spark_tmp, task_logs_id, dispatchOption, etlTaskInfo, inPut, dsi_Input ++ inputOptions, filter, inputCols, null, null, outPutCols_tmp, null)
 
         val tableName = etlTaskInfo.getOrElse("etl_context", "").toString.split("#")(1)
         ds.createTempView(tableName)
@@ -138,13 +149,18 @@ object DataSources {
          result = spark.sql(sql)
       })
 
+      val fileType=etlMoreTaskInfo.getOrElse("file_type_output","csv").toString
+      val encoding=etlMoreTaskInfo.getOrElse("encoding_output","utf-8").toString
+      val sep=etlMoreTaskInfo.getOrElse("sep_output",",").toString
+      val outputOptions_tmp=outputOptions.asInstanceOf[Map[String,String]].+("fileType"->fileType,"encoding"->encoding,"sep"->sep)
+
       //写入数据源
-      outPutHandler(spark, result, outPut, outputOptions, null, sql)
+      outPutHandler(spark_tmp, result, outPut, outputOptions_tmp, null, sql)
       MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "finish", etl_date, "100")
       if (outPut.trim.toLowerCase.equals("外部下载")) {
         //获取路径信息
-        val root_path = outputOptions.getOrElse("root_path", "")
-        val paths = outputOptions.getOrElse("paths", "")
+        val root_path = outputOptions_tmp.getOrElse("root_path", "")
+        val paths = outputOptions_tmp.getOrElse("paths", "")
         MariadbCommon.insertZdhDownloadInfo(root_path + "/" + paths + ".csv", Timestamp.valueOf(etl_date), owner, job_context)
       }
 
@@ -169,6 +185,7 @@ object DataSources {
         }
       })
 
+      SparkSession.clearActiveSession()
     }
 
 
@@ -182,6 +199,7 @@ object DataSources {
     val owner = dispatchOption.getOrElse("owner", "001").toString
     val job_context = dispatchOption.getOrElse("job_context", "001").toString
     MDC.put("job_id", dispatch_task_id)
+    val spark_tmp=spark.newSession()
     try {
       logger.info("[数据采集]:[SQL]:数据采集开始")
       logger.info("[数据采集]:[SQL]:数据采集日期:" + etl_date)
@@ -194,10 +212,10 @@ object DataSources {
       }
 
       logger.info("[数据采集]:[SQL]:"+etl_sql)
-      val df=DataWareHouseSources.getDS(spark,dispatchOption,inPut,inputOptions.asInstanceOf[Map[String,String]],
+      val df=DataWareHouseSources.getDS(spark_tmp,dispatchOption,inPut,inputOptions.asInstanceOf[Map[String,String]],
         null,null,null,outPut,outputOptionions.asInstanceOf[Map[String,String]],outputCols,etl_sql)
 
-      outPutHandler(spark,df,outPut,outputOptionions,outputCols,sql)
+      outPutHandler(spark_tmp,df,outPut,outputOptionions,outputCols,sql)
 
       MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "finish", etl_date, "100")
       if (outPut.trim.toLowerCase.equals("外部下载")) {
@@ -217,6 +235,7 @@ object DataSources {
       }
     } finally {
       MDC.remove("job_id")
+      SparkSession.clearActiveSession()
     }
 
 
@@ -258,6 +277,10 @@ object DataSources {
       case ""=>Array.empty[String]
       case a=>a.split(",")
     }
+    val fileType=etlTaskInfo.getOrElse("file_type_input","csv").toString
+    val encoding=etlTaskInfo.getOrElse("encoding_input","utf-8").toString
+    val sep=etlTaskInfo.getOrElse("sep_input",",").toString
+    val inputOptions_tmp=inputOptions.asInstanceOf[Map[String,String]].+("fileType"->fileType,"encoding"->encoding,"sep"->sep)
     val zdhDataSources: ZdhDataSources = inPut.toString.toLowerCase match {
       case "jdbc" => JdbcDataSources
       case "hdfs" => HdfsDataSources
@@ -354,7 +377,7 @@ object DataSources {
     })
 
     MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "25")
-    val df = zdhDataSources.getDS(spark, dispatchOption, inPut, inputOptions.asInstanceOf[Map[String, String]],
+    val df = zdhDataSources.getDS(spark, dispatchOption, inPut, inputOptions_tmp.asInstanceOf[Map[String, String]],
       inputCondition, inputCols, duplicate_columns,outPut, outputOptionions.asInstanceOf[Map[String, String]], outputCols, sql)
     MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "50")
 

@@ -86,6 +86,10 @@ object JdbcDataSources extends ZdhDataSources{
     try{
       logger.info("[数据采集]:[JDBC]:[SELECT]")
       logger.debug("[数据采集]:[JDBC]:[SELECT]:"+select.mkString(","))
+      if(select==null || select.isEmpty){
+        logger.debug("[数据采集]:[JDBC]:[SELECT]:[智能识别字段]" +df.columns.mkString(","))
+        return df
+      }
       df.select(select: _*)
     }catch {
       case ex:Exception=>{

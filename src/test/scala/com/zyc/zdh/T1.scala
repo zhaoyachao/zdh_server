@@ -35,6 +35,14 @@ class T1 extends FunSuite {
     println("20200101".substring(0,6))
   }
 
+  test("covert"){
+    val s='|'
+    val s1="\\"
+    println(s)
+    println(s1.replace("\\","\\\\"))
+
+  }
+
 
   test("sort2"){
 

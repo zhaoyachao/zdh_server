@@ -68,8 +68,9 @@ object ESDataSources extends ZdhDataSources {
   override def process(spark: SparkSession, df: DataFrame, select: Array[Column],zdh_etl_date:String)(implicit dispatch_task_id:String): DataFrame = {
     try{
       logger.info("[数据采集]:[ES]:[SELECT]:"+select.mkString(","))
-      if(select==null || select.length<=0){
-       return df
+      if(select==null || select.isEmpty){
+        logger.debug("[数据采集]:[ES]:[SELECT]:[智能识别字段]" +df.columns.mkString(","))
+        return df
       }
       df.select(select: _*)
     }catch {

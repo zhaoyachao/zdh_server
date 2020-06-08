@@ -70,7 +70,11 @@ object DataWareHouseSources extends ZdhDataSources {
     try {
       logger.info("[数据采集]:[DATAWAREHOUSE]:[SELECT]")
       logger.debug("[数据采集]:[DATAWAREHOUSE]:[SELECT]:" + select.mkString(","))
-      df
+      if(select==null || select.isEmpty){
+        logger.debug("[数据采集]:[DATAWAREHOUSE]:[SELECT]:[智能识别字段]" +df.columns.mkString(","))
+        return df
+      }
+      df.select(select:_*)
     } catch {
       case ex: Exception => {
         logger.error("[数据采集]:[DATAWAREHOUSE]:[SELECT]:[ERROR]:" + ex.getMessage.replace("\"","'"), "error")
