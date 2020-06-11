@@ -83,6 +83,7 @@ trait ZdhDataSources {
     try {
       import spark.implicits._
       val total_count = df.count()
+      report.put("总行数", total_count.toString)
       var error_count = 0L;
       //表级质量检测
       //判断主键是否重复

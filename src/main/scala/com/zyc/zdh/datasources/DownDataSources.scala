@@ -63,6 +63,11 @@ object DownDataSources extends ZdhDataSources {
           save(root_path + "/" + paths+".csv")
       } else {
         logger.info("[数据采集]:[外部下载]:[WRITE]:未配置sftp 服务器,输出到本地数据源")
+        val file=new File(root_path)
+        if(!file.exists()){
+          file.mkdirs()
+          logger.info("[数据采集]:[外部下载]:[WRITE]:输出到本地数据源,自动创建目录"+root_path)
+        }
         writeFile3(spark, df_tmp, root_path + "/" + paths, null);
       }
 
