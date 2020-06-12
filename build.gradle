@@ -129,23 +129,34 @@ dependencies {
     //compile group: 'it.nerdammer.bigdata', name: 'spark-hbase-connector_2.10', version: '1.0.3'
 
     //hbase
-    compile (group: 'org.apache.hbase', name: 'hbase-mapreduce', version: '2.0.0'){
-        exclude(module: 'hbase-client')
-        exclude(module: 'hbase-server')
-        exclude(module: 'hbase-protocol')
-        exclude(module: 'hbase-common')
-    }
+//    compile (group: 'org.apache.hbase', name: 'hbase-mapreduce', version: '2.0.0'){
+//        exclude(module: 'hbase-client')
+//        exclude(module: 'hbase-server')
+//       // exclude(module: 'hbase-protocol')
+//        exclude(module: 'hbase-common')
+//        exclude(module: 'hbase-protocol-shaded')
+//    }
     compile (group: 'org.apache.hbase', name: 'hbase-client', version: '1.3.6'){
         exclude(module: 'hbase-common')
+        exclude(module: 'hbase-protocol')
     }
     // https://mvnrepository.com/artifact/org.apache.hbase/hbase-common
     compile group: 'org.apache.hbase', name: 'hbase-common', version: '1.3.6'
 
     compile (group: 'org.apache.hbase', name: 'hbase-server', version: '1.3.6'){
         exclude(module: 'servlet-api-2.5')
+        exclude(module: 'hbase-protocol')
+        exclude(module: 'hbase-client')
     }
+    // https://mvnrepository.com/artifact/org.apache.hbase/hbase-shaded-client
+   // compile group: 'org.apache.hbase', name: 'hbase-shaded-client', version: '1.3.6'
+    // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
+    compile group: 'com.google.protobuf', name: 'protobuf-java', version: '2.5.0'
+    // https://mvnrepository.com/artifact/org.apache.hbase.thirdparty/hbase-shaded-protobuf
+
+
     // https://mvnrepository.com/artifact/org.apache.hbase/hbase-protocol
-    compile group: 'org.apache.hbase', name: 'hbase-protocol', version: '1.3.6'
+   // compile group: 'org.apache.hbase', name: 'hbase-protocol', version: '1.3.6'
 
 //    compile (group: 'org.apache.phoenix', name: 'phoenix-client', version: '4.14.3-HBase-1.3'){
 //        exclude(module: 'phoenix-flume')

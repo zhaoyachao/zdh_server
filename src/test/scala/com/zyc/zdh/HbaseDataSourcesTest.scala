@@ -1,8 +1,11 @@
 package com.zyc.zdh
 
 import com.zyc.TEST_TRAIT2
+import com.zyc.zdh.datasources.HbaseDataSources
 //import org.apache.hadoop.hbase.spark.datasources.HBaseTableCatalog
 import org.scalatest.FunSuite
+import org.apache.spark.sql.functions._
+
 
 class HbaseDataSourcesTest extends FunSuite with TEST_TRAIT2{
 
@@ -10,8 +13,8 @@ class HbaseDataSourcesTest extends FunSuite with TEST_TRAIT2{
 
     val table="t1"
     val cols=Array("cf1:name","cf1:age")
-    val map=Map("url"->"10.136.1.37,10.136.1.38,10.136.1.39")
-  //  HbaseDataSources.getDS(spark,table,map,cols,"0,1")("1").show(false)
+    val map=Map("url"->"127.0.0.1","paths"->"t1")
+    HbaseDataSources.getDS(spark,null,"",map,"0,1",cols,null,null,null,Array.empty[Map[String,String]],"")("1").show(false)
 
   }
 
@@ -75,6 +78,18 @@ class HbaseDataSourcesTest extends FunSuite with TEST_TRAIT2{
     val cols=Array("cf1:name","cf2:age","cf1:sex")
     val map=Map("url"->"192.168.65.10:2181")
    // HbaseDataSources.getDS(spark,table,map,cols,"0,1")("1").show(false)
+
+  }
+
+  test("loadHFile"){
+
+    import spark.implicits._
+    val options=Map("paths"->"t1")
+
+
+    val df=spark.range(0,100).select(concat(col("id"),lit("a")) as "row_key",lit("1a") as "cf1:index",lit("zyc") as "cf1:name",lit("zhaoyachao") as "cf2:user")
+
+    HbaseDataSources.writeHFile(spark,df,options)("001")
 
   }
 

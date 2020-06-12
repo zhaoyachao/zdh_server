@@ -248,6 +248,7 @@ object HdfsDataSources extends ZdhDataSources {
 
 
   override def writeDS(spark: SparkSession, df: DataFrame, options: Map[String, String], sql: String)(implicit dispatch_task_id: String): Unit = {
+    logger.info("[数据采集]:[HDFS]:[WRITE]:[options]:" + options.mkString(","))
     val model = options.getOrElse("model", "").toString.toLowerCase match {
       case "overwrite" => SaveMode.Overwrite
       case "append" => SaveMode.Append
@@ -271,6 +272,14 @@ object HdfsDataSources extends ZdhDataSources {
     //合并小文件操作
     if (!options.getOrElse("merge", "-1").equals("-1")) {
       df_tmp = df.repartition(options.getOrElse("merge", "200").toInt)
+    }
+    if(fileType.equalsIgnoreCase("csv")){
+     val sep= options.getOrElse("sep",",")
+      if(sep.length>1){
+        logger.info("[数据采集]:[HDFS]:[WRITE]:写入文件为csv,并且分割符为多分割符,分割符:"+sep)
+        val col_name=df_tmp.columns.mkString(sep)
+        df_tmp.select(concat_ws(sep,col("*")) as col_name)
+      }
     }
 
     writeDS(spark, df_tmp, fileType, hdfs + outputPath, model, options, partitionBy)
