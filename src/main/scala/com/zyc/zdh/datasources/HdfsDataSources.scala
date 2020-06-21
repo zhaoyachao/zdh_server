@@ -255,7 +255,7 @@ object HdfsDataSources extends ZdhDataSources {
     logger.info("[数据采集]:[HDFS]:[HUDI]:[READ]:[cols]:" + cols.mkString(",") + "[options]:" + options.mkString(",") + " [FILTER]:" + inputCondition)
     var ds = spark.read.format("hudi")
       .options(options)
-      .load(paths)
+      .load(paths+"/*")
 
     if (cols != null && !cols.isEmpty) {
       ds = ds.select(cols.map(col(_)): _*)
@@ -297,6 +297,7 @@ object HdfsDataSources extends ZdhDataSources {
       case _ => SaveMode.Append
     }
 
+    var options_tmp=options
     val fileType = options.getOrElse("fileType", "csv").toString
     val partitionBy = options.getOrElse("partitionBy", "").toString
     val outputPath = options.getOrElse("paths", "").toString
@@ -317,12 +318,23 @@ object HdfsDataSources extends ZdhDataSources {
      val sep= options.getOrElse("sep",",")
       if(sep.length>1){
         logger.info("[数据采集]:[HDFS]:[WRITE]:写入文件为csv,并且分割符为多分割符,分割符:"+sep)
-        val col_name=df_tmp.columns.mkString(sep)
-        df_tmp.select(concat_ws(sep,col("*")) as col_name)
+        val columns=df_tmp.columns
+        var col_name=columns.mkString(sep)
+        options_tmp=options.+("sep"->",","header"->options.getOrElse("header","true"))
+        if(!partitionBy.equalsIgnoreCase("")){
+         //如果存在分区字段,则需要把分区字段单独放出来
+          val ncolumns=columns.filterNot(f=>partitionBy.split(",").contains(f))
+          col_name=ncolumns.mkString(sep)
+          val pcolumns=partitionBy.split(",").map(col(_))
+
+          df_tmp =df_tmp.select(pcolumns.+:(concat_ws(sep,ncolumns.map(col(_)):_*) as col_name):_*)
+        }else{
+          df_tmp =df_tmp.select(concat_ws(sep,columns.map(col(_)):_*) as col_name)
+        }
       }
     }
 
-    writeDS(spark, df_tmp, fileType, hdfs + outputPath, model, options, partitionBy)
+    writeDS(spark, df_tmp, fileType, hdfs + outputPath, model, options_tmp, partitionBy)
   }
 
   def writeDS(spark: SparkSession, df: DataFrame, outPut: String, path: String, model: SaveMode, options: Map[String, String],
@@ -352,10 +364,12 @@ object HdfsDataSources extends ZdhDataSources {
         }
         val recordkey_field_opt_key=options.getOrElse("recordkey_field_opt_key","")
         val precombine_field_opt_key=options.getOrElse("precombine_field_opt_key","")
+        val operation_opt_key=options.getOrElse("operation_opt_key","upsert")
 
         options_tmp=options.+( HoodieWriteConfig.TABLE_NAME->tableName).+(
           DataSourceWriteOptions.PRECOMBINE_FIELD_OPT_KEY->precombine_field_opt_key,
-          DataSourceWriteOptions.RECORDKEY_FIELD_OPT_KEY->recordkey_field_opt_key)
+          DataSourceWriteOptions.RECORDKEY_FIELD_OPT_KEY->recordkey_field_opt_key,
+          DataSourceWriteOptions.OPERATION_OPT_KEY->operation_opt_key)
         path_tmp=path
         logger.info("[数据采集]:[HDFS]:[WRITE]:[HUDI]:"+ "[options]:" + options_tmp.mkString(",")+",[path]:"+path_tmp)
       }
