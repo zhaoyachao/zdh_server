@@ -1,6 +1,8 @@
 package com.zyc.zdh.datasources
 
 import com.zyc.zdh.ZdhDataSources
+import org.apache.hudi.DataSourceWriteOptions
+import org.apache.hudi.config.HoodieWriteConfig
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{Column, DataFrame, SaveMode, SparkSession}
 import org.slf4j.LoggerFactory
@@ -63,6 +65,8 @@ object HdfsDataSources extends ZdhDataSources {
         case "paquet" => parquet(spark, paths, options, cols, inputCondition)
         case "json" => json(spark, paths, options, cols, inputCondition)
         case "excel" => excel(spark, paths, options, cols, inputCondition)
+        case "delta"=>delta(spark, paths, options, cols, inputCondition)
+        case "hudi" => hudi(spark, paths, options, cols, inputCondition)
         case _ => other(spark, paths, sep, options, cols, inputCondition)
       }
     } catch {
@@ -215,7 +219,43 @@ object HdfsDataSources extends ZdhDataSources {
       //      .option("workbookPassword", "pass") // Optional, default None. Requires unlimited strength JCE for older JVMs
       //      .schema(myCustomSchema) // Optional, default: Either inferred schema, or all columns are Strings
       .load(paths)
-      .toDF(cols: _*)
+
+
+    if (cols != null && !cols.isEmpty) {
+      ds = ds.toDF(cols: _*).select(cols.map(col(_)): _*)
+    }
+
+    if (inputCondition.trim.equals(""))
+      ds
+    else
+      ds.filter(inputCondition)
+  }
+
+  def delta(spark: SparkSession, paths: String, options: Map[String, String], cols: Array[String],
+           inputCondition: String)(implicit dispatch_task_id: String): DataFrame ={
+
+    logger.info("[数据采集]:[HDFS]:[DELTA]:[READ]:[cols]:" + cols.mkString(",") + "[options]:" + options.mkString(",") + " [FILTER]:" + inputCondition)
+    var ds = spark.read.format("delta")
+      .options(options)
+      .load(paths)
+
+    if (cols != null && !cols.isEmpty) {
+      ds = ds.select(cols.map(col(_)): _*)
+    }
+
+    if (inputCondition.trim.equals(""))
+      ds
+    else
+      ds.filter(inputCondition)
+  }
+
+  def hudi(spark: SparkSession, paths: String, options: Map[String, String], cols: Array[String],
+           inputCondition: String)(implicit dispatch_task_id: String): DataFrame ={
+
+    logger.info("[数据采集]:[HDFS]:[HUDI]:[READ]:[cols]:" + cols.mkString(",") + "[options]:" + options.mkString(",") + " [FILTER]:" + inputCondition)
+    var ds = spark.read.format("hudi")
+      .options(options)
+      .load(paths)
 
     if (cols != null && !cols.isEmpty) {
       ds = ds.select(cols.map(col(_)): _*)
@@ -288,19 +328,42 @@ object HdfsDataSources extends ZdhDataSources {
   def writeDS(spark: SparkSession, df: DataFrame, outPut: String, path: String, model: SaveMode, options: Map[String, String],
               partitionBy: String)(implicit dispatch_task_id: String): Unit = {
     try {
-      logger.info("[数据采集]:[HDFS]:[WRITE]:[outPut]:" + outPut + "[path]:" + path + "[mode]:" + model.name() + "[options]:" + options.mkString(",") + "[partitionBy]:" + partitionBy)
+      logger.info("[数据采集]:[HDFS]:[WRITE]:[outPut]:" + outPut + ",[path]:" + path + "[mode]:" + model.name() + ",[options]:" + options.mkString(",") + ",[partitionBy]:" + partitionBy)
+      var options_tmp=options
       var format = outPut
+      var path_tmp=path
+      val cols=df.columns
       if (outPut.toLowerCase.equals("xlsx") || outPut.toLowerCase.equals("xls")) {
         format = "com.crealytics.spark.excel"
       }
       if (outPut.toLowerCase.equals("xml")) {
         format = "com.databricks.spark.xml"
       }
+      if(outPut.equalsIgnoreCase("hudi")){
+        val basePath=path.substring(0,path.lastIndexOf("/"))
+        val tableName=path.substring(path.lastIndexOf("/")+1)
+       // TABLENAME
+       val cols=df.columns
+        if(options.getOrElse("precombine_field_opt_key","").toString.equalsIgnoreCase("") && !cols.contains("ts")){
+          throw new Exception("[数据采集]:[HDFS]:[WRITE]:[ERROR]:写入hudi数据文件时必须指定主键,请设置etl任务中的主键字段precombine_field_opt_key参数")
+        }
+        if(options.getOrElse("recordkey_field_opt_key","").toString.equalsIgnoreCase("") && !cols.contains("uuid")){
+          throw new Exception("[数据采集]:[HDFS]:[WRITE]:[ERROR]:写入hudi数据文件时必须指定主键,请设置etl任务中的主键字段recordkey_field_opt_key参数")
+        }
+        val recordkey_field_opt_key=options.getOrElse("recordkey_field_opt_key","")
+        val precombine_field_opt_key=options.getOrElse("precombine_field_opt_key","")
+
+        options_tmp=options.+( HoodieWriteConfig.TABLE_NAME->tableName).+(
+          DataSourceWriteOptions.PRECOMBINE_FIELD_OPT_KEY->precombine_field_opt_key,
+          DataSourceWriteOptions.RECORDKEY_FIELD_OPT_KEY->recordkey_field_opt_key)
+        path_tmp=path
+        logger.info("[数据采集]:[HDFS]:[WRITE]:[HUDI]:"+ "[options]:" + options_tmp.mkString(",")+",[path]:"+path_tmp)
+      }
 
       if (!partitionBy.equals("")) {
-        df.write.format(format).mode(model).partitionBy(partitionBy.mkString(",")).options(options).save(path)
+        df.write.format(format).mode(model).partitionBy(partitionBy.mkString(",")).options(options_tmp).save(path_tmp)
       } else {
-        df.write.format(format).mode(model).options(options).save(path)
+        df.write.format(format).mode(model).options(options_tmp).save(path_tmp)
       }
     } catch {
       case ex: Exception => {

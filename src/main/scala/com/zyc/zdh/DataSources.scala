@@ -45,6 +45,7 @@ object DataSources {
       val fileType=etlTaskInfo.getOrElse("file_type_output","csv").toString
       val encoding=etlTaskInfo.getOrElse("encoding_output","utf-8").toString
       val sep=etlTaskInfo.getOrElse("sep_output",",").toString
+      val primary_columns = etlTaskInfo.getOrElse("primary_columns", "").toString
       val outputOptions_tmp=outputOptions.asInstanceOf[Map[String,String]].+("fileType"->fileType,"encoding"->encoding,"sep"->sep)
 
       val df = inPutHandler(spark_tmp, task_logs_id, dispatchOption, etlTaskInfo, inPut, inputOptions, inputCondition, inputCols, outPut, outputOptions_tmp, outputCols, sql)
@@ -377,7 +378,7 @@ object DataSources {
     })
 
     MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "25")
-    val df = zdhDataSources.getDS(spark, dispatchOption, inPut, inputOptions_tmp.asInstanceOf[Map[String, String]],
+    val df = zdhDataSources.getDS(spark, dispatchOption, inPut, inputOptions_tmp.asInstanceOf[Map[String, String]].+("primary"->""),
       inputCondition, inputCols, duplicate_columns,outPut, outputOptionions.asInstanceOf[Map[String, String]], outputCols, sql)
     MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "50")
 

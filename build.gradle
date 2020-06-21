@@ -195,8 +195,11 @@ dependencies {
 
     // https://mvnrepository.com/artifact/com.lucidworks.spark/spark-solr
    // compile group: 'com.lucidworks.spark', name: 'spark-solr', version: '3.7.6'
+    
+    //https://github.com/apache/hudi#building-apache-hudi-from-source
+    compile group: 'org.apache.hudi', name: 'hudi-spark-bundle_2.11', version: '0.5.3'
 
-
+    compile group: 'org.apache.spark', name: 'spark-avro_2.11', version: '2.4.4'
 
 }
 

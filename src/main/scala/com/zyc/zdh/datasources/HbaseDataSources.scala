@@ -167,6 +167,7 @@ object HbaseDataSources extends ZdhDataSources {
     // var HbaseTale: Table = null
     val table = options.getOrElse("paths", "").toString
 
+    logger.info("[数据采集]:[HBASE]:[WRITE]:如果设置write_mode 为hfile 会使用hfile文件方式写入hbase,此方法适用于大数据量写入hbase")
     if (options.getOrElse("write_mode", "").equalsIgnoreCase("hfile")) {
       logger.info("[数据采集]:[HBASE]:[WRITE]:选择HFILE 方式写入")
       writeHFile(spark, df, options, sql);
