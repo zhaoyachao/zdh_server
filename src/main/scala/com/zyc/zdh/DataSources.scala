@@ -44,9 +44,10 @@ object DataSources {
       logger.info("[数据采集]:数据采集日期:" + etl_date)
       val fileType=etlTaskInfo.getOrElse("file_type_output","csv").toString
       val encoding=etlTaskInfo.getOrElse("encoding_output","utf-8").toString
+      val header=etlTaskInfo.getOrElse("header_output","false").toString
       val sep=etlTaskInfo.getOrElse("sep_output",",").toString
       val primary_columns = etlTaskInfo.getOrElse("primary_columns", "").toString
-      val outputOptions_tmp=outputOptions.asInstanceOf[Map[String,String]].+("fileType"->fileType,"encoding"->encoding,"sep"->sep)
+      val outputOptions_tmp=outputOptions.asInstanceOf[Map[String,String]].+("fileType"->fileType,"encoding"->encoding,"sep"->sep,"header"->header)
 
       val df = inPutHandler(spark_tmp, task_logs_id, dispatchOption, etlTaskInfo, inPut, inputOptions, inputCondition, inputCols, outPut, outputOptions_tmp, outputCols, sql)
 
@@ -152,8 +153,9 @@ object DataSources {
 
       val fileType=etlMoreTaskInfo.getOrElse("file_type_output","csv").toString
       val encoding=etlMoreTaskInfo.getOrElse("encoding_output","utf-8").toString
+      val header=etlMoreTaskInfo.getOrElse("header_output","false").toString
       val sep=etlMoreTaskInfo.getOrElse("sep_output",",").toString
-      val outputOptions_tmp=outputOptions.asInstanceOf[Map[String,String]].+("fileType"->fileType,"encoding"->encoding,"sep"->sep)
+      val outputOptions_tmp=outputOptions.asInstanceOf[Map[String,String]].+("fileType"->fileType,"encoding"->encoding,"sep"->sep,"header"->header)
 
       //写入数据源
       outPutHandler(spark_tmp, result, outPut, outputOptions_tmp, null, sql)
@@ -193,7 +195,7 @@ object DataSources {
   }
 
   def DataHandlerSql(spark: SparkSession, task_logs_id: String, dispatchOption: Map[String, Any], sqlTaskInfo: Map[String, Any], inPut: String, inputOptions: Map[String, Any],
-                     outPut: String, outputOptionions: Map[String, Any], outputCols: Array[Map[String, String]], sql: String): Unit ={
+                     outPut: String, outputOptions: Map[String, Any], outputCols: Array[Map[String, String]], sql: String): Unit ={
 
     implicit val dispatch_task_id = dispatchOption.getOrElse("job_id", "001").toString
     val etl_date = JsonUtil.jsonToMap(dispatchOption.getOrElse("params", "").toString).getOrElse("ETL_DATE", "").toString;
@@ -213,16 +215,24 @@ object DataSources {
       }
 
       logger.info("[数据采集]:[SQL]:"+etl_sql)
-      val df=DataWareHouseSources.getDS(spark_tmp,dispatchOption,inPut,inputOptions.asInstanceOf[Map[String,String]],
-        null,null,null,outPut,outputOptionions.asInstanceOf[Map[String,String]],outputCols,etl_sql)
 
-      outPutHandler(spark_tmp,df,outPut,outputOptionions,outputCols,sql)
+      val df=DataWareHouseSources.getDS(spark_tmp,dispatchOption,inPut,inputOptions.asInstanceOf[Map[String,String]],
+        null,null,null,outPut,outputOptions.asInstanceOf[Map[String,String]],outputCols,etl_sql)
+
+      val fileType=sqlTaskInfo.getOrElse("file_type_output","csv").toString
+      val encoding=sqlTaskInfo.getOrElse("encoding_output","utf-8").toString
+      val header=sqlTaskInfo.getOrElse("header_output","false").toString
+      val sep=sqlTaskInfo.getOrElse("sep_output",",").toString
+      val outputOptions_tmp=outputOptions.asInstanceOf[Map[String,String]].+("fileType"->fileType,"encoding"->encoding,"sep"->sep,"header"->header)
+
+
+      outPutHandler(spark_tmp,df,outPut,outputOptions_tmp,outputCols,sql)
 
       MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "finish", etl_date, "100")
       if (outPut.trim.toLowerCase.equals("外部下载")) {
         //获取路径信息
-        val root_path = outputOptionions.getOrElse("root_path", "")
-        val paths = outputOptionions.getOrElse("paths", "")
+        val root_path = outputOptions.getOrElse("root_path", "")
+        val paths = outputOptions.getOrElse("paths", "")
         MariadbCommon.insertZdhDownloadInfo(root_path + "/" + paths + ".csv", Timestamp.valueOf(etl_date), owner, job_context)
       }
       logger.info("[数据采集]:[SQL]:数据采集完成")
@@ -280,8 +290,9 @@ object DataSources {
     }
     val fileType=etlTaskInfo.getOrElse("file_type_input","csv").toString
     val encoding=etlTaskInfo.getOrElse("encoding_input","utf-8").toString
+    val header=etlTaskInfo.getOrElse("header_input","false").toString
     val sep=etlTaskInfo.getOrElse("sep_input",",").toString
-    val inputOptions_tmp=inputOptions.asInstanceOf[Map[String,String]].+("fileType"->fileType,"encoding"->encoding,"sep"->sep)
+    val inputOptions_tmp=inputOptions.asInstanceOf[Map[String,String]].+("fileType"->fileType,"encoding"->encoding,"sep"->sep,"header"->header)
     val zdhDataSources: ZdhDataSources = inPut.toString.toLowerCase match {
       case "jdbc" => JdbcDataSources
       case "hdfs" => HdfsDataSources
