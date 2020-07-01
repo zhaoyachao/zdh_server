@@ -39,6 +39,7 @@ object DataSources {
     val job_context = dispatchOption.getOrElse("job_context", "001").toString
     MDC.put("job_id", dispatch_task_id)
     val spark_tmp=spark.newSession()
+    spark_tmp.sparkContext.setJobGroup(job_context,etlTaskInfo.getOrElse("etl_context",etlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date)
     try {
       logger.info("[数据采集]:数据采集开始")
       logger.info("[数据采集]:数据采集日期:" + etl_date)
@@ -116,6 +117,8 @@ object DataSources {
         //输入数据源类型
         val inPut = dsi_Input.getOrElse("data_source_type", "").toString
         val etlTaskInfo = f.getOrElse("etlTaskInfo", Map.empty[String, Any])
+
+        spark_tmp.sparkContext.setJobGroup(job_context,etlTaskInfo.getOrElse("etl_context",etlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date)
         //参数
         val inputOptions: Map[String, Any] = etlTaskInfo.getOrElse("data_sources_params_input", "").toString.trim match {
           case "" => Map.empty[String, Any]
@@ -203,6 +206,7 @@ object DataSources {
     val job_context = dispatchOption.getOrElse("job_context", "001").toString
     MDC.put("job_id", dispatch_task_id)
     val spark_tmp=spark.newSession()
+    spark_tmp.sparkContext.setJobGroup(job_context,sqlTaskInfo.getOrElse("sql_context",sqlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date)
     try {
       logger.info("[数据采集]:[SQL]:数据采集开始")
       logger.info("[数据采集]:[SQL]:数据采集日期:" + etl_date)

@@ -30,12 +30,13 @@ object SystemInit {
           HACommon.deleteEtcdLock()
         }
       }).start()
+      val web_port=spark.conf.get("spark.ui.port","4040")
       if(!HACommon.current_host.equals("")){
-        MariadbCommon.insertZdhHaInfo(HACommon.zdh_instance,HACommon.current_host,HACommon.port)
+        MariadbCommon.insertZdhHaInfo(HACommon.zdh_instance,HACommon.current_host,HACommon.port,web_port)
       }else{
         val config = ConfigFactory.load("application.conf")
         val port=config.getConfig("server").getString("port")
-        MariadbCommon.insertZdhHaInfo(HACommon.zdh_instance,"127.0.0.1",port)
+        MariadbCommon.insertZdhHaInfo(HACommon.zdh_instance,"127.0.0.1",port,web_port)
       }
       new NettyServer().start()
 

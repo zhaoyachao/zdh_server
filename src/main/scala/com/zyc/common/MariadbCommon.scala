@@ -61,7 +61,7 @@ object MariadbCommon {
   }
 
 
-  def insertZdhHaInfo(zdh_instance:String,zdh_host:String,zdh_port:String): Unit ={
+  def insertZdhHaInfo(zdh_instance:String,zdh_host:String,zdh_port:String,web_port:String): Unit ={
     if (connection == null){
       synchronized {
         logger.info("数据库未初始化连接,尝试初始化连接")
@@ -87,17 +87,18 @@ object MariadbCommon {
       stat_update.execute()
       logger.info(s"完成更新zdh_ha_info")
 
-      logger.info(s"开始插入zdh_ha_info:${zdh_instance},IP:${zdh_host},PORT:${zdh_port}")
+      logger.info(s"开始插入zdh_ha_info:${zdh_instance},IP:${zdh_host},PORT:${zdh_port},WEB_PORT:${web_port}")
       //ETL_DATE,MODEL_NAME,STATUS,START_TIME,END_TIME
-      val sql = s"insert into zdh_ha_info (zdh_instance,zdh_url,zdh_host,zdh_port,zdh_status) values(?,?,?,?,?)"
+      val sql = s"insert into zdh_ha_info (zdh_instance,zdh_url,zdh_host,zdh_port,web_port,zdh_status) values(?,?,?,?,?,?)"
       val statement = connection.prepareStatement(sql)
       statement.setString(1, zdh_instance)
       statement.setString(2, "http://"+zdh_host+":"+zdh_port+"/api/v1/zdh")
       statement.setString(3, zdh_host)
       statement.setString(4,zdh_port)
-      statement.setString(5,"enabled")
+      statement.setString(5,web_port)
+      statement.setString(6,"enabled")
       statement.execute()
-      logger.info(s"完成插入zdh_ha_info:${zdh_instance},IP:${zdh_host},PORT:${zdh_port}")
+      logger.info(s"完成插入zdh_ha_info:${zdh_instance},IP:${zdh_host},PORT:${zdh_port},WEB_PORT:${web_port}")
     } catch {
       case ex: Exception => {
         logger.error("ZDH_HA_INFO插入数据时出现错误", ex.getCause)
