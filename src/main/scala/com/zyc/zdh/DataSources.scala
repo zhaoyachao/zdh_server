@@ -57,11 +57,10 @@ object DataSources {
 
       if (!inPut.toString.toLowerCase.equals("kafka") && !inPut.toString.toLowerCase.equals("flume")) {
         outPutHandler(spark_tmp, df, outPut, outputOptions_tmp, outputCols, sql)
+        MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "finish", etl_date, "100")
       } else {
         logger.info("[数据采集]:数据采集检测是实时采集,输出数据源为jdbc")
       }
-
-      MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "finish", etl_date, "100")
       if (outPut.trim.toLowerCase.equals("外部下载")) {
         //获取路径信息
         val root_path = outputOptions_tmp.getOrElse("root_path", "")
