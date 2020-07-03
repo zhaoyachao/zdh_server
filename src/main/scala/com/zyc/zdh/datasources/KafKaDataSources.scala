@@ -96,8 +96,10 @@ object KafKaDataSources extends ZdhDataSources {
 
     // Create direct kafka stream with brokers and topics
     val topicsSet = topics.split(",").toSet
-    val sep = options.getOrElse("sep", ",")
-
+    var sep = options.getOrElse("sep", ",")
+    if(sep.size>1){
+      sep=sepConvert(sep)
+    }
     //判断消息类型
     val msgType = options.getOrElse("msgType", "csv")
     //多行模式
@@ -183,7 +185,10 @@ object KafKaDataSources extends ZdhDataSources {
 
     // Create direct kafka stream with brokers and topics
     val topicsSet = topics.split(",").toSet
-    val sep = options.getOrElse("sep", ",")
+    var sep = options.getOrElse("sep", ",")
+    if(sep.size>1){
+      sep=sepConvert(sep)
+    }
 
     //判断消息类型
     val msgType = options.getOrElse("msgType", "csv")
@@ -236,6 +241,38 @@ object KafKaDataSources extends ZdhDataSources {
     ssc.start()
     ssc.awaitTermination()
 
+  }
+
+  def sepConvert(sep:String): String ={
+    var sep_tmp = sep.replace("\\", "\\\\")
+    if (sep_tmp.contains('$')) {
+      sep_tmp = sep_tmp.replace("$", "\\$")
+    }
+    if (sep_tmp.contains('(') || sep_tmp.contains(')')) {
+      sep_tmp = sep_tmp.replace("(", "\\(").replace(")", "\\)")
+    }
+    if (sep_tmp.contains('*')) {
+      sep_tmp = sep_tmp.replace("*", "\\*")
+    }
+    if (sep_tmp.contains('+')) {
+      sep_tmp = sep_tmp.replace("+", "\\+")
+    }
+    if (sep_tmp.contains('-')) {
+      sep_tmp = sep_tmp.replace("-", "\\-")
+    }
+    if (sep_tmp.contains('[') || sep_tmp.contains(']')) {
+      sep_tmp = sep_tmp.replace("[", "\\[").replace("]", "\\]")
+    }
+    if (sep_tmp.contains('{') || sep_tmp.contains('}')) {
+      sep_tmp = sep_tmp.replace("{", "\\{").replace("}", "\\}")
+    }
+    if (sep_tmp.contains('^')) {
+      sep_tmp = sep_tmp.replace("^", "\\^")
+    }
+    if (sep_tmp.contains('|')) {
+      sep_tmp = sep_tmp.replace("|", "\\|")
+    }
+    sep_tmp
   }
 
   override def process(spark: SparkSession, df: DataFrame, select: Array[Column], zdh_etl_date: String)(implicit dispatch_task_id: String): DataFrame = {
