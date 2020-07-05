@@ -262,6 +262,9 @@ jar {
         attributes 'Main-Class': 'com.zyc.SystemInit'
     }
 }
+processResources {
+    exclude { "**/*.*" }
+}
 
 // 复制依赖jar至build/libs
 task copyJar(type: Copy) {
@@ -279,6 +282,16 @@ task copyJar2(type: Copy) {
     into('release/libs')
 }
 
+task copyJar3(type:Copy){
+    from ("libs")
+    into('release/copy_spark_jars')
+}
+
+task copyConf(type:Copy){
+    from ("src/main/resources")
+    into ('release/conf')
+}
+
 task clearJar(type: Delete) {
     delete 'release/libs'
 }
@@ -289,7 +302,7 @@ task clearHadoopJar(type: Delete) {
 }
 
 // 打包
-task release(type: Copy, dependsOn: [build,clearJar,jar,copyJar,copyJar2])
+task release(type: Copy, dependsOn: [build,clearJar,jar,copyJar,copyConf,copyJar2,copyJar3])
 
 
 configurations {

@@ -1,0 +1,5 @@
+enable=true
+url=jdbc:mysql://127.0.0.1:3306/mydb?serverTimezone=GMT%2B8&useSSL=false&allowPublicKeyRetrieval=true
+driver=com.mysql.cj.jdbc.Driver
+username=zyc
+password=123456

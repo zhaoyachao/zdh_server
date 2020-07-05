@@ -25,18 +25,16 @@
     linux : ./gradlew jar
     
 # 部署
-    拷贝release/libs 下所有的jar 到spark的classpath 目录下(SPARK_HOME/jars)
+    1 先编译项目--参见上方项目编译打包
+    2 下载release 目录修改启动脚本
+    3 需要将release/copy_spark_jars 目录下的jar 拷贝到spark home 目录下的jars 目录
+    4 启动脚本 start_server.sh
     
 # 启动脚本
     注意项目需要用到log4j.properties 需要单独放到driver 机器上,启动采用client 模式
-    nohup ${SPARK_HOME}/bin/spark-submit \
-       --class com.zyc.SystemInit \
-       --driver-memory 2g \
-       --conf "spark.driver.extraJavaOptions=-Dlog4j.configuration=file:/app/zyc/log4j.properties" \
-       --conf spark.sql.catalogImplementation=hive \
-       --jars /app/zyc/spark_zdh_sources/spark_zdh/release/libs/* \
-       /app/zyc/spark_zdh_sources/spark_zdh/release/libs/zdh.jar \
-      > spark_zdh.log &
+    在release/bin 目录下 修改start_server.sh 脚本中的BASE_RUN_PATH 变量为当前所在路径
+    运行start_server.sh 脚本即可
+      
     
 # 停止脚本
      kill `ps -ef |grep SparkSubmit |grep zdh_server |awk -F ' ' '{print $2}'`
