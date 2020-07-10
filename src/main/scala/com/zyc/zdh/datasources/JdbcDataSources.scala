@@ -43,11 +43,11 @@ object JdbcDataSources extends ZdhDataSources{
       }
       val user: String = inputOptions.getOrElse("user", "").toString
       if(user.trim.equals("")){
-        throw new Exception("[zdh],jdbc数据源读取:user为空")
+     //   throw new Exception("[zdh],jdbc数据源读取:user为空")
       }
       val password: String = inputOptions.getOrElse("password", "").toString
       if(password.trim.equals("")){
-        throw new Exception("[zdh],jdbc数据源读取:password为空")
+      //  throw new Exception("[zdh],jdbc数据源读取:password为空")
       }
       val driver: String = inputOptions.getOrElse("driver", "").toString
       if(driver.trim.equals("")){
@@ -57,9 +57,13 @@ object JdbcDataSources extends ZdhDataSources{
       logger.info("[数据采集]:[JDBC]:[READ]:表名:"+inputOptions.getOrElse("dbtable","")+","+inputOptions.mkString(",")+" [FILTER]:"+inputCondition)
       //获取jdbc 配置
       var format="jdbc"
-      if(inputOptions.getOrElse("driver","").toLowerCase.contains("jdbc:hive2:")){
+      if(inputOptions.getOrElse("url","").toLowerCase.contains("jdbc:hive2:")){
         format="org.apache.spark.sql.hive_jdbc.datasources.hive.HiveRelationProvider"
         logger.info("[数据采集]:[JDBC]:[READ]:表名:"+inputOptions.getOrElse("dbtable","")+",使用自定义hive-jdbc数据源")
+      }
+      if(inputOptions.getOrElse("url","").toLowerCase.contains("jdbc:clickhouse:")){
+        format="org.apache.spark.sql.hive_jdbc.datasources.clickhouse.ClickHouseRelationProvider"
+        logger.info("[数据采集]:[JDBC]:[READ]:表名:"+inputOptions.getOrElse("dbtable","")+",使用自定义clickhouse-jdbc数据源")
       }
 
       var df:DataFrame=spark.read.format(format).options(inputOptions).load()
@@ -110,14 +114,19 @@ object JdbcDataSources extends ZdhDataSources{
       }
 
       var format="jdbc"
-      if(options.getOrElse("driver","").toLowerCase.contains("jdbc:hive2:")){
+      if(options.getOrElse("url","").toLowerCase.contains("jdbc:hive2:")){
         format="org.apache.spark.sql.hive_jdbc.datasources.hive.HiveRelationProvider"
         logger.info("[数据采集]:[JDBC]:[WRITE]:表名:"+options.getOrElse("dbtable","")+",使用自定义hive-jdbc数据源")
+      }
+      if(options.getOrElse("url","").toLowerCase.contains("jdbc:clickhouse:")){
+        format="org.apache.spark.sql.hive_jdbc.datasources.clickhouse.ClickHouseRelationProvider"
+        logger.info("[数据采集]:[JDBC]:[WRITE]:表名:"+options.getOrElse("dbtable","")+",使用自定义clickhouse-jdbc数据源")
       }
       df.write.format(format).mode(SaveMode.Append).options(options).save()
 
     }catch {
       case ex:Exception=>{
+        ex.printStackTrace()
         logger.info("[数据采集]:[JDBC]:[WRITE]:表名:"+options.getOrElse("dbtable","")+","+"[ERROR]:"+ex.getMessage.replace("\"","'"))
         throw ex
       }

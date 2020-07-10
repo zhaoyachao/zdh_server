@@ -201,6 +201,9 @@ dependencies {
 
     compile group: 'org.apache.spark', name: 'spark-avro_2.11', version: '2.4.4'
 
+    // https://mvnrepository.com/artifact/com.github.housepower/clickhouse-native-jdbc
+    compile group: 'com.github.housepower', name: 'clickhouse-native-jdbc', version: '2.1-stable'
+
 }
 
 
