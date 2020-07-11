@@ -43,10 +43,12 @@ object JdbcDataSources extends ZdhDataSources{
       }
       val user: String = inputOptions.getOrElse("user", "").toString
       if(user.trim.equals("")){
+        logger.info("[zdh],jdbc数据源读取:user为空")
      //   throw new Exception("[zdh],jdbc数据源读取:user为空")
       }
       val password: String = inputOptions.getOrElse("password", "").toString
       if(password.trim.equals("")){
+        logger.info("[zdh],jdbc数据源读取:password为空")
       //  throw new Exception("[zdh],jdbc数据源读取:password为空")
       }
       val driver: String = inputOptions.getOrElse("driver", "").toString
@@ -144,7 +146,7 @@ object JdbcDataSources extends ZdhDataSources{
     * @param sql
     */
   def deleteJDBC(spark: SparkSession, url: String, options:  Map[String,String], sql: String)(implicit dispatch_task_id:String): Unit = {
-    logger.info("[数据采集]:[JDBC]:[CLEAR]:url"+url+","+options.mkString(",")+",sql:"+sql)
+    logger.info("[数据采集]:[JDBC]:[CLEAR]:url:"+url+","+options.mkString(",")+",sql:"+sql)
     import scala.collection.JavaConverters._
     val properties=new Properties()
     properties.putAll(options.asJava)

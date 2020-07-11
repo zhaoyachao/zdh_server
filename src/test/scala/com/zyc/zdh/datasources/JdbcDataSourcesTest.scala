@@ -47,7 +47,7 @@ class JdbcDataSourcesTest extends FunSuite with TEST_TRAIT2{
     )
     import org.apache.spark.sql.functions._
     val df=spark.range(10).select(concat(lit("zhaoyachao"),col("id")) as "name",lit(123) as "age",lit("woman") as "sex",lit(100.5f).cast("float") as "money")
-    JdbcDataSources.writeDS(spark,df,inputOptions,"")
+    JdbcDataSources.writeDS(spark,df,inputOptions,"alter table datasets.z1 delete where 1=1")
   }
 
 }
