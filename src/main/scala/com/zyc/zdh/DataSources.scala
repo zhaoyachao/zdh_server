@@ -2,6 +2,7 @@ package com.zyc.zdh
 
 import java.sql.Timestamp
 import java.util
+import java.util.regex.Pattern
 
 import com.zyc.base.util.{DateUtil, JsonUtil}
 import com.zyc.common.MariadbCommon
@@ -150,7 +151,7 @@ object DataSources {
       var result:DataFrame=null
       exe_sql_ary.foreach(sql=>{
         if (!sql.trim.equals(""))
-         result = spark.sql(sql)
+         result = spark_tmp.sql(sql)
       })
 
       val fileType=etlMoreTaskInfo.getOrElse("file_type_output","csv").toString
@@ -360,6 +361,7 @@ object DataSources {
       c1.matches(a.toString())
     })
 
+    logger.info("开始加载ETL任务转换信息,检测元数据是否合规")
     outputCols.foreach(f => {
       if (f.getOrElse("column_is_null", "true").trim.equals("false")) {
         if (f.getOrElse("column_name", "").trim.equals("")) {
@@ -390,7 +392,7 @@ object DataSources {
       }
 
     })
-
+    logger.info("完成加载ETL任务转换信息")
     MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "25")
     val df = zdhDataSources.getDS(spark, dispatchOption, inPut, inputOptions_tmp.asInstanceOf[Map[String, String]].+("primary"->""),
       inputCondition, inputCols, duplicate_columns,outPut, outputOptionions.asInstanceOf[Map[String, String]], outputCols, sql)
@@ -405,9 +407,30 @@ object DataSources {
         throw new Exception("ETL 任务做质量检测时不通过,具体请查看质量检测报告")
       }
       logger.info("完成质量检测")
+    }else{
+      logger.info("未开启质量检测,如果想开启,请打开ETL任务中质量检测开关")
     }
 
-    zdhDataSources.process(spark, df, outputCols_expr, etl_date)
+    val result=zdhDataSources.process(spark, df, outputCols_expr, etl_date)
+
+    val repartition_num=inputOptions.getOrElse("repartition_num","").toString
+    val repartition_cols=inputOptions.getOrElse("repartition_cols","").toString
+
+
+    if( !repartition_num.equals("")&& !repartition_cols.equals("")){
+      logger.info("数据重分区规则,重分区个数:"+repartition_num+",重分区字段:"+repartition_cols)
+      return result.repartition(repartition_num.toInt,repartition_cols.split(",").map(col(_)):_*)
+    }
+    if(repartition_num.equals("")&& !repartition_cols.equals("")){
+      logger.info("数据重分区规则,重分区字段:"+repartition_cols+",无分区个数")
+      return result.repartition(repartition_cols.split(",").map(col(_)):_*)
+    }
+    if(!repartition_num.equals("")&& repartition_cols.equals("")){
+      logger.info("数据重分区规则,重分区个数:"+repartition_num+",无分区字段")
+      return result.repartition(repartition_num.toInt)
+    }
+
+    result
   }
 
 

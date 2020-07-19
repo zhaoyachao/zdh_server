@@ -529,6 +529,7 @@ class sparkTest extends FunSuite with TEST_TRAIT2 {
 
     spark.sql("desc default.t1").show(false)
     spark.sql("desc d1.t1").show(false)
+
   }
 
 }
