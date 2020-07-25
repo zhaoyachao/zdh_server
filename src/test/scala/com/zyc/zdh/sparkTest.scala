@@ -1,17 +1,21 @@
 package com.zyc.zdh
 
 import java.sql.{DriverManager, ResultSet, Statement}
+import java.util.Collections
 
 import com.zyc.TEST_TRAIT2
 import com.zyc.base.util.{DateUtil, JsonSchemaBuilder}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.expressions.Window
-import org.apache.spark.sql.{Row, SaveMode}
+import org.apache.spark.sql.{Row, RowFactory, SaveMode}
 import org.scalatest.FunSuite
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.SizeEstimator
+import org.kie.api.KieServices
+
+import scala.collection.{JavaConversions, JavaConverters}
 
 class sparkTest extends FunSuite with TEST_TRAIT2 {
 
@@ -532,4 +536,95 @@ class sparkTest extends FunSuite with TEST_TRAIT2 {
 
   }
 
+  test("spark_col_map"){
+
+    import spark.implicits._
+    import org.apache.spark.sql.functions._
+
+   // spark.range(10).select(col("id"),lit("z") as "name").select(map_concat(col("id"),col("name")) as "m1" ).show()
+   val rules="package rules\n " +
+     "import com.zyc.drools.D1\n"+
+     "import java.util.HashMap\n"+
+     "rule \"alarm\"\n"+
+     "no-loop true\n"+
+     "when\n"+
+     "d1:HashMap(d1.get(\"id\")>=5)\n"+
+     "then\n"+
+     "d1.put(\"dsts\",\"true\");\n"+
+     "update(d1);\n"+
+    "D1 d2=new D1();\n"+
+    "d2.update(\"hello world\");\n"+
+     "System.out.print(\"dddddddddd=\"+d1.get(\"id\"));\n"+
+     "end"
+
+    println(rules)
+
+
+
+    val ds=spark.range(10).select(col("id"),lit("z") as "name")
+      .select(map_from_arrays(array(lit("id"),lit("name")),array(col("id"),col("name"))) as "map")
+
+
+    import  scala.collection.JavaConverters._
+
+
+    implicit val mapEncoder = org.apache.spark.sql.Encoders.kryo[java.util.HashMap[String, String]]
+
+    val re=ds.mapPartitions(ms=>{
+      val kieServices = KieServices.Factory.get();
+      val kfs = kieServices.newKieFileSystem();
+      kfs.write("src/main/resources/rules/rules.drl", rules.getBytes());
+      val kieBuilder = kieServices.newKieBuilder(kfs).buildAll();
+      val results = kieBuilder.getResults();
+      if (results.hasMessages(org.kie.api.builder.Message.Level.ERROR)) {
+        System.out.println(results.getMessages());
+        throw new IllegalStateException("### errors ###");
+      }
+      val kieContainer = kieServices.newKieContainer(kieServices.getRepository().getDefaultReleaseId());
+      val kieBase = kieContainer.getKieBase();
+      val ksession = kieBase.newKieSession()
+
+      val rs=ms.map(f=>{
+        val map=f.getAs[Map[String,String]](0)
+        val m=new java.util.HashMap[String,String]()
+        map.foreach(a=>m.put(a._1,a._2))
+        ksession.insert(m)
+        ksession.fireAllRules()
+      m.asScala.toMap
+    })
+      rs
+    }).toDF("map")
+
+re.show(false)
+
+    spark.read.json(re.select(to_json(col("map"))).as[String]).show()
+
+
+//    ds.map(f=>{
+//      val kieServices = KieServices.Factory.get();
+//      val kfs = kieServices.newKieFileSystem();
+//      kfs.write("src/main/resources/rules/rules.drl", rules.getBytes());
+//      val kieBuilder = kieServices.newKieBuilder(kfs).buildAll();
+//      val results = kieBuilder.getResults();
+//      if (results.hasMessages(org.kie.api.builder.Message.Level.ERROR)) {
+//        System.out.println(results.getMessages());
+//        throw new IllegalStateException("### errors ###");
+//      }
+//      val kieContainer = kieServices.newKieContainer(kieServices.getRepository().getDefaultReleaseId());
+//      val kieBase = kieContainer.getKieBase();
+//      val ksession = kieBase.newKieSession()
+//      val map=f.getAs[Map[String,String]](0)
+//      val m=new java.util.HashMap[String,String]()
+//      map.foreach(a=>{
+//        m.put(a._1,a._2)
+//      })
+//      ksession.insert(m)
+//      val res=ksession.fireAllRules()
+//      ksession.dispose()
+//      m.asScala.toMap
+//    }).show(false)
+
+
+
+  }
 }

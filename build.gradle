@@ -204,6 +204,16 @@ dependencies {
     // https://mvnrepository.com/artifact/com.github.housepower/clickhouse-native-jdbc
     compile group: 'com.github.housepower', name: 'clickhouse-native-jdbc', version: '2.1-stable'
 
+    // https://mvnrepository.com/artifact/org.kie/kie-api
+    compile group: 'org.kie', name: 'kie-api', version: '7.40.0.Final'
+    // https://mvnrepository.com/artifact/org.drools/drools-compiler
+    compile group: 'org.drools', name: 'drools-compiler', version: '7.40.0.Final'
+    // https://mvnrepository.com/artifact/org.drools/drools-core
+    compile group: 'org.drools', name: 'drools-core', version: '7.40.0.Final'
+
+
+
+
 }
 
 

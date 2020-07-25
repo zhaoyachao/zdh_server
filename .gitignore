@@ -8,3 +8,4 @@ spark-warehouse/
 META-INF/
 gradle/
 release/libs
+logs/

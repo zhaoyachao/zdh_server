@@ -6,12 +6,15 @@ import java.util
 import java.util.Properties
 
 import com.zyc.base.util.DateUtil
+import com.zyc.drools.D1
 import net.sf.jsqlparser.expression.Expression
 import net.sf.jsqlparser.expression.operators.conditional.{AndExpression, OrExpression}
 import net.sf.jsqlparser.expression.operators.relational.{GreaterThan, GreaterThanEquals, MinorThan, MinorThanEquals}
 import net.sf.jsqlparser.parser.CCJSqlParserManager
 import net.sf.jsqlparser.statement.delete.Delete
 import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerRecord}
+import org.kie.api.KieServices
+import org.kie.internal.builder.{KnowledgeBuilder, KnowledgeBuilderFactory}
 import org.scalatest.FunSuite
 
 class T1 extends FunSuite {
@@ -224,6 +227,53 @@ class T1 extends FunSuite {
     uri = URI.create(hadoop2)
 
     print(uri.toString)
+
+  }
+
+  test("drools"){
+    val rules="package rules\n " +
+      "import com.zyc.drools.D1\n"+
+      "import java.util.HashMap\n"+
+      "rule \"alarm\"\n"+
+      "no-loop true\n"+
+      "when\n"+
+      "d1:HashMap(1==1)\n"+
+      "then\n"+
+      "d1.put(\"age\",\"22\");\n"+
+      "update(d1);\n"+
+      "D1 d2=new D1();\n"+
+      "d2.update(\"hello world\");\n"+
+      "System.out.print(\"dddddddddd=\"+d1.get(\"id\"));\n"+
+      "end"
+
+
+
+    implicit val mapEncoder = org.apache.spark.sql.Encoders.kryo[Map[String, Any]]
+
+
+    val kieServices = KieServices.Factory.get();
+    val kfs = kieServices.newKieFileSystem();
+    kfs.write("src/main/resources/rules/rules.drl", rules.getBytes());
+    val kieBuilder = kieServices.newKieBuilder(kfs).buildAll();
+    val results = kieBuilder.getResults();
+    if (results.hasMessages(org.kie.api.builder.Message.Level.ERROR)) {
+      System.out.println(results.getMessages());
+      throw new IllegalStateException("### errors ###");
+    }
+    val kieContainer = kieServices.newKieContainer(kieServices.getRepository().getDefaultReleaseId());
+    val kieBase = kieContainer.getKieBase();
+    val ksession = kieBase.newKieSession()
+    import  scala.collection.JavaConverters._
+
+    val map=Map("id"->"1")
+   // var m2=map.asJava
+    var m2=new util.HashMap[String,String]()
+    m2.put("id","1")
+    ksession.insert(m2)
+    val res=ksession.fireAllRules()
+    println(m2.asScala.mkString(","))
+
+
 
   }
 }

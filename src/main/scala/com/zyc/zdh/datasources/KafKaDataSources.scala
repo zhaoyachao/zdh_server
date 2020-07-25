@@ -231,10 +231,6 @@ object KafKaDataSources extends ZdhDataSources {
       if (tmp != null && !tmp.isEmpty)
         JdbcDataSources.writeDS(spark, tmp, outputOptions, "")
 
-      offsetRanges.foreach { offsetRange =>
-        logger.info("partition : " + offsetRange.partition + " fromOffset:  " + offsetRange.fromOffset + " untilOffset: " + offsetRange.untilOffset)
-        val topic_partition_key = offsetRange.topic + "_" + offsetRange.partition
-      }
     })
 
 

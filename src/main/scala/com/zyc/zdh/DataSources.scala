@@ -10,6 +10,7 @@ import com.zyc.zdh.datasources._
 import org.apache.log4j.MDC
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{Column, DataFrame, SparkSession}
+import org.kie.api.KieServices
 import org.slf4j.LoggerFactory
 
 object DataSources {
@@ -255,6 +256,138 @@ object DataSources {
 
 
 
+
+
+  }
+
+
+  def DataHandlerDrools(spark: SparkSession, task_logs_id: String, dispatchOption: Map[String, Any], dsi_EtlInfo: Map[String, Map[String, Any]],
+                      etlDroolsTaskInfo: Map[String, Any], outPut: String, outputOptions: Map[String, Any], outputCols: Array[Map[String, String]], sql: String): Unit = {
+
+    implicit val dispatch_task_id = dispatchOption.getOrElse("job_id", "001").toString
+    val etl_date = JsonUtil.jsonToMap(dispatchOption.getOrElse("params", "").toString).getOrElse("ETL_DATE", "").toString;
+    val owner = dispatchOption.getOrElse("owner", "001").toString
+    val job_context = dispatchOption.getOrElse("job_context", "001").toString
+
+    MDC.put("job_id", dispatch_task_id)
+    val spark_tmp=spark.newSession()
+    import spark_tmp.implicits._
+    val tables = new util.ArrayList[String]();
+    try {
+      logger.info("[数据采集]:[Drools]:数据采集开始")
+      logger.info("[数据采集]:[Drools]:数据采集日期:" + etl_date)
+      val exe_drools = etlDroolsTaskInfo.getOrElse("etl_drools", "").toString.replaceAll("\\$zdh_etl_date", "'" + etl_date + "'")
+      if (exe_drools.trim.equals("")) {
+        //logger.error("多源任务对应的单源任务说明必须包含# 格式 'etl任务说明#临时表名'")
+        throw new Exception("Drools任务处理逻辑必须不为空")
+      }
+      logger.info("[数据采集]:[Drools]:数据处理规则:\n"+exe_drools)
+
+      val filter_drools=etlDroolsTaskInfo.getOrElse("data_sources_filter_input", "").toString
+
+      //多源处理
+
+
+        //调用读取数据源
+        //输入数据源信息
+        val dsi_Input = dsi_EtlInfo.getOrElse("dsi_Input", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
+        //输入数据源类型
+        val inPut = dsi_Input.getOrElse("data_source_type", "").toString
+        val etlTaskInfo = dsi_EtlInfo.getOrElse("etlTaskInfo", Map.empty[String, Any])
+
+        spark_tmp.sparkContext.setJobGroup(job_context,etlTaskInfo.getOrElse("etl_context",etlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date)
+        //参数
+        val inputOptions: Map[String, Any] = etlTaskInfo.getOrElse("data_sources_params_input", "").toString.trim match {
+          case "" => Map.empty[String, Any]
+          case a => JsonUtil.jsonToMap(a)
+        }
+        //过滤条件
+        val filter = etlTaskInfo.getOrElse("data_sources_filter_input", "").toString
+        //输入字段
+        val inputCols: Array[String] = etlTaskInfo.getOrElse("data_sources_file_columns", "").toString.split(",")
+        //输出字段
+        val list_map = etlTaskInfo.getOrElse("column_data_list", null).asInstanceOf[List[Map[String, String]]]
+        val outPutCols_tmp = list_map.toArray
+
+
+        val ds = inPutHandler(spark_tmp, task_logs_id, dispatchOption, etlTaskInfo, inPut, dsi_Input ++ inputOptions, filter, inputCols, null, null, outPutCols_tmp, null)
+
+
+      //执行drools 逻辑
+
+      var result:DataFrame=null
+      val columns=ds.columns
+
+      val keyColumns=array(columns.map(lit(_)):_*)
+      val valueColumns=array(columns.map(col(_)):_*)
+      val ds_result=ds.select(map_from_arrays(keyColumns,valueColumns) as "map")
+
+
+      import  scala.collection.JavaConverters._
+
+
+      implicit val mapEncoder = org.apache.spark.sql.Encoders.kryo[java.util.HashMap[String, String]]
+
+
+      val tmp_ds=ds_result.mapPartitions(ms=>{
+        val kieServices = KieServices.Factory.get();
+        val kfs = kieServices.newKieFileSystem();
+        kfs.write("src/main/resources/rules/"+job_context+"_"+etl_date+".drl", exe_drools.split("\r\n").mkString("\n").getBytes());
+        val kieBuilder = kieServices.newKieBuilder(kfs).buildAll();
+        val results = kieBuilder.getResults();
+        if (results.hasMessages(org.kie.api.builder.Message.Level.ERROR)) {
+          System.out.println(results.getMessages());
+          throw new IllegalStateException("errors");
+        }
+        val kieContainer = kieServices.newKieContainer(kieServices.getRepository().getDefaultReleaseId());
+        val kieBase = kieContainer.getKieBase();
+        val ksession = kieBase.newKieSession()
+
+        val rs=ms.map(f=>{
+          val map=f.getAs[Map[String,String]](0)
+          val m=new java.util.HashMap[String,String]()
+          map.foreach(a=>m.put(a._1,a._2))
+          ksession.insert(m)
+          ksession.fireAllRules()
+          m.asScala.toMap
+        })
+        rs
+      }).toDF("map").select(to_json(col("map")) as "map").as[String]
+
+      result=spark.read.json(tmp_ds)
+      if(!filter_drools.equals("")){
+        result=result.filter(filter_drools)
+      }
+
+      val fileType=etlDroolsTaskInfo.getOrElse("file_type_output","csv").toString
+      val encoding=etlDroolsTaskInfo.getOrElse("encoding_output","utf-8").toString
+      val header=etlDroolsTaskInfo.getOrElse("header_output","false").toString
+      val sep=etlDroolsTaskInfo.getOrElse("sep_output",",").toString
+      val outputOptions_tmp=outputOptions.asInstanceOf[Map[String,String]].+("fileType"->fileType,"encoding"->encoding,"sep"->sep,"header"->header)
+
+      //写入数据源
+      outPutHandler(spark_tmp, result, outPut, outputOptions_tmp, null, sql)
+      MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "finish", etl_date, "100")
+      if (outPut.trim.toLowerCase.equals("外部下载")) {
+        //获取路径信息
+        val root_path = outputOptions_tmp.getOrElse("root_path", "")
+        val paths = outputOptions_tmp.getOrElse("paths", "")
+        MariadbCommon.insertZdhDownloadInfo(root_path + "/" + paths + ".csv", Timestamp.valueOf(etl_date), owner, job_context)
+      }
+
+      logger.info("[数据采集]:[Drools]:数据采集完成")
+    } catch {
+      case ex: Exception => {
+        ex.printStackTrace()
+        val line=System.getProperty("line.separator")
+        val log=ex.getMessage.split(line).mkString(",")
+        logger.info("[数据采集]:[Drools]:[ERROR]:" +log.trim)
+        MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "error", etl_date, "")
+      }
+    } finally {
+      MDC.remove("job_id")
+      SparkSession.clearActiveSession()
+    }
 
 
   }
