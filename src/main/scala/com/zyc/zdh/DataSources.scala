@@ -139,6 +139,10 @@ object DataSources {
           logger.error("多源任务对应的单源任务说明必须包含# 格式 'etl任务说明#临时表名'")
           throw new Exception("多源任务对应的单源任务说明必须包含# 格式 'etl任务说明#临时表名'")
         }
+        if (inPut.toString.toLowerCase.equals("kafka") || inPut.toString.toLowerCase.equals("flume")) {
+          logger.error("多源任务对应的单源任务 不支持流数据kafka,flume")
+          throw new Exception("多源任务对应的单源任务 不支持流数据kafka,flume")
+        }
 
         val ds = inPutHandler(spark_tmp, task_logs_id, dispatchOption, etlTaskInfo, inPut, dsi_Input ++ inputOptions, filter, inputCols, null, null, outPutCols_tmp, null)
 
@@ -285,7 +289,6 @@ object DataSources {
 
       val filter_drools=etlDroolsTaskInfo.getOrElse("data_sources_filter_input", "").toString
 
-      //多源处理
 
 
         //调用读取数据源
@@ -309,6 +312,10 @@ object DataSources {
         val list_map = etlTaskInfo.getOrElse("column_data_list", null).asInstanceOf[List[Map[String, String]]]
         val outPutCols_tmp = list_map.toArray
 
+      if (inPut.toString.toLowerCase.equals("kafka") || inPut.toString.toLowerCase.equals("flume")) {
+        logger.error("Drools任务对应的单源任务 不支持流数据kafka,flume")
+        throw new Exception("Drools任务对应的单源任务 不支持流数据kafka,flume")
+      }
 
         val ds = inPutHandler(spark_tmp, task_logs_id, dispatchOption, etlTaskInfo, inPut, dsi_Input ++ inputOptions, filter, inputCols, null, null, outPutCols_tmp, null)
 
@@ -531,7 +538,7 @@ object DataSources {
       inputCondition, inputCols, duplicate_columns,outPut, outputOptionions.asInstanceOf[Map[String, String]], outputCols, sql)
     MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "50")
 
-    if (enable_quality.trim.equals("on")) {
+    if (enable_quality.trim.equals("on") && !inPut.equalsIgnoreCase("kafka")) {
       logger.info("任务开启了质量检测,开始进行质量检测")
       val report = zdhDataSources.dataQuality(spark, df, error_rate, primary_columns, column_size, rows_range, column_is_null, column_length,column_regex)
 
@@ -541,7 +548,7 @@ object DataSources {
       }
       logger.info("完成质量检测")
     }else{
-      logger.info("未开启质量检测,如果想开启,请打开ETL任务中质量检测开关")
+      logger.info("未开启质量检测,如果想开启,请打开ETL任务中质量检测开关,提示:如果输入数据源是kafka 不支持质量检测")
     }
 
     val result=zdhDataSources.process(spark, df, outputCols_expr, etl_date)
