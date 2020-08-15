@@ -265,6 +265,14 @@ object DateUtil {
     date
   }
 
+  def add(start: Timestamp, dateType: Int, num: Int): Timestamp = {
+    val beginDate = Calendar.getInstance
+    beginDate.setTimeInMillis(start.getTime)
+    beginDate.add(dateType, num)
+    new Timestamp(beginDate.getTimeInMillis)
+  }
+
+
   /**
     * 日期转yyyyMMdd 格式字符串
     *

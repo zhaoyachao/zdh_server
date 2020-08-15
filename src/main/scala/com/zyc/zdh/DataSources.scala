@@ -75,8 +75,8 @@ object DataSources {
       case ex: Exception => {
         ex.printStackTrace()
         logger.error("[数据采集]:[ERROR]:" + ex.getMessage, ex.getCause)
-        MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "error", etl_date, "")
-
+        //MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "error", etl_date, "")
+        MariadbCommon.updateTaskStatus2(task_logs_id,dispatch_task_id,dispatchOption,etl_date)
       }
     } finally {
       MDC.remove("job_id")
@@ -182,7 +182,8 @@ object DataSources {
         val line=System.getProperty("line.separator")
         val log=ex.getMessage.split(line).mkString(",")
         logger.info("[数据采集]:[多源]:[ERROR]:" +log.trim)
-        MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "error", etl_date, "")
+        //MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "error", etl_date, "")
+        MariadbCommon.updateTaskStatus2(task_logs_id,dispatch_task_id,dispatchOption,etl_date)
       }
     } finally {
       MDC.remove("job_id")
@@ -250,8 +251,8 @@ object DataSources {
       case ex: Exception => {
         ex.printStackTrace()
         logger.error("[数据采集]:[SQL]:[ERROR]:" + ex.getMessage, ex.getCause)
-        MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "error", etl_date, "")
-
+        //MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "error", etl_date, "")
+        MariadbCommon.updateTaskStatus2(task_logs_id,dispatch_task_id,dispatchOption,etl_date)
       }
     } finally {
       MDC.remove("job_id")
@@ -389,7 +390,8 @@ object DataSources {
         val line=System.getProperty("line.separator")
         val log=ex.getMessage.split(line).mkString(",")
         logger.info("[数据采集]:[Drools]:[ERROR]:" +log.trim)
-        MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "error", etl_date, "")
+        //MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "error", etl_date, "")
+        MariadbCommon.updateTaskStatus2(task_logs_id,dispatch_task_id,dispatchOption,etl_date)
       }
     } finally {
       MDC.remove("job_id")
