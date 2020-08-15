@@ -152,7 +152,7 @@ object DataSources {
       })
 
       //执行sql
-      val exe_sql_ary=exe_sql.split(";\r\n")
+      val exe_sql_ary=exe_sql.split(";\r\n|;\n")
       var result:DataFrame=null
       exe_sql_ary.foreach(sql=>{
         if (!sql.trim.equals(""))

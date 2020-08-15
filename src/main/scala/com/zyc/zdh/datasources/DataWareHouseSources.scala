@@ -38,7 +38,7 @@ object DataWareHouseSources extends ZdhDataSources {
       logger.info("[数据采集]:[DATAWAREHOUSE]:[READ]:" + inputOptions.mkString(","))
       logger.info("[数据采集]:[DATAWAREHOUSE]:执行语句:"+sql)
       if (!sql.trim.equals("")) {
-        val exe_sql_ary = sql.split(";\r\n")
+        val exe_sql_ary = sql.split(";\r\n|;\n")
         var result: DataFrame = null
         exe_sql_ary.foreach(sql_t => {
           if (!sql_t.trim.equals(""))

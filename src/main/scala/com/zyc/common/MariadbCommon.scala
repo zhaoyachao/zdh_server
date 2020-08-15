@@ -81,12 +81,7 @@ object MariadbCommon {
       logger.info("数据库连接失效,重连成功")
     }
     try {
-      logger.info(s"开始更新zdh_ha_info状态为enabled")
-      val update_sql="update zdh_ha_info set zdh_status='disabled' where zdh_status='enabled'"
-      val stat_update=connection.prepareStatement(update_sql)
-      stat_update.execute()
-      logger.info(s"完成更新zdh_ha_info")
-
+      updateZdhHaInfo(zdh_instance,zdh_host,zdh_port,web_port)
       logger.info(s"开始插入zdh_ha_info:${zdh_instance},IP:${zdh_host},PORT:${zdh_port},WEB_PORT:${web_port}")
       //ETL_DATE,MODEL_NAME,STATUS,START_TIME,END_TIME
       val sql = s"insert into zdh_ha_info (zdh_instance,zdh_url,zdh_host,zdh_port,web_port,zdh_status) values(?,?,?,?,?,?)"
@@ -99,6 +94,47 @@ object MariadbCommon {
       statement.setString(6,"enabled")
       statement.execute()
       logger.info(s"完成插入zdh_ha_info:${zdh_instance},IP:${zdh_host},PORT:${zdh_port},WEB_PORT:${web_port}")
+    } catch {
+      case ex: Exception => {
+        logger.error("ZDH_HA_INFO插入数据时出现错误", ex.getCause)
+        throw ex
+      }
+    }
+
+  }
+
+  def updateZdhHaInfo(zdh_instance:String,zdh_host:String,zdh_port:String,web_port:String): Unit ={
+    if (connection == null){
+      synchronized {
+        logger.info("数据库未初始化连接,尝试初始化连接")
+        if (connection == null) {
+          if(!getConnect())
+            throw new Exception("connection mariadb fail,could not get connection ")
+        }
+        logger.info("数据库完成初始化连接")
+      }
+    }
+
+    if (connection != null && !connection.isValid(5000)) {
+      logger.info("数据库连接失效,尝试重新连接")
+      connection.close()
+      if (!getConnect())
+        throw new Exception("connection mariadb fail,could not get connection ")
+      logger.info("数据库连接失效,重连成功")
+    }
+    try {
+      logger.info(s"开始更新zdh_ha_info状态为enabled")
+      val update_sql=s"update zdh_ha_info set zdh_status='disabled' where zdh_status='enabled' and zdh_instance=? and zdh_url=? and zdh_host=?" +
+        " and zdh_port=? and web_port=?"
+      val stat_update=connection.prepareStatement(update_sql)
+      stat_update.setString(1,zdh_instance)
+      stat_update.setString(2,"http://"+zdh_host+":"+zdh_port+"/api/v1/zdh")
+      stat_update.setString(3,zdh_host)
+      stat_update.setString(4,zdh_port)
+      stat_update.setString(5,web_port)
+      stat_update.execute()
+      logger.info(s"完成更新zdh_ha_info")
+
     } catch {
       case ex: Exception => {
         logger.error("ZDH_HA_INFO插入数据时出现错误", ex.getCause)

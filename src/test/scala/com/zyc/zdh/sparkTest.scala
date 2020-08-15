@@ -534,6 +534,8 @@ class sparkTest extends FunSuite with TEST_TRAIT2 {
     spark.sql("desc default.t1").show(false)
     spark.sql("desc d1.t1").show(false)
 
+
+
   }
 
   test("spark_col_map"){
@@ -626,5 +628,15 @@ re.show(false)
 
 
 
+  }
+
+  test("web_port"){
+
+    val web_port=spark.conf.get("spark.ui.port","4040")
+
+    println(spark.sparkContext.uiWebUrl.get)
+    while (true){
+      Thread.sleep(10000)
+    }
   }
 }
