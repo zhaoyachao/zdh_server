@@ -1,4 +1,4 @@
-package com.zyc.zdh.datasources.http.datasources
+package com.zyc.zdh.datasources.http
 
 import com.zyc.base.util.JsonSchemaBuilder
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode}

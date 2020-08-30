@@ -97,7 +97,8 @@ object HdfsDataSources extends ZdhDataSources {
     logger.info("[数据采集]:[HDFS]:[CSV]:[READ]:[cols]:" + cols.mkString(",") + "[options]:" + options.mkString(",") + " [FILTER]:" + inputCondition)
 
     import spark.implicits._
-    val ncols = cols.zipWithIndex.map(f => col("value").getItem(f._2) as f._1)
+    var ncols = cols.zipWithIndex.map(f => col("value").getItem(f._2) as f._1)
+    var ncols2 =Array.empty[Column]
     var ds: DataFrame = null
     if (sep.size == 1 && options.getOrElse("header", "false").equalsIgnoreCase("true")) {
       ds = spark.read.format("csv").options(options).option("sep", sep).load(paths)
@@ -135,9 +136,19 @@ object HdfsDataSources extends ZdhDataSources {
         sep_tmp = sep_tmp.replace("|", "\\|")
       }
       logger.info("[数据采集]:[HDFS]:[CSV]:[READ]:分割符为多为:" + sep + ",转义之后的分割符为:" + sep_tmp)
+      if(options.getOrElse("header", "false").equalsIgnoreCase("true")){
+        ds = spark.read.format("csv").options(options).option("sep", ",").load(paths)
+        ncols2=ds.columns.mkString(",").split(sep_tmp).zipWithIndex.map(f => col("value").getItem(f._2) as f._1)
+      }
+      if(ncols.isEmpty){
+        ncols=ncols2;
+      }
       ds = spark.read.format("csv").options(options).option("sep", ",").load(paths)
         .map(f => f.mkString(",").split(sep_tmp)).toDF("value")
-        .select(ncols: _*)
+      if(!ncols2.isEmpty){
+        ds=ds.select(ncols2:_*)
+      }
+      ds=ds.select(ncols: _*)
     }
 
     if (inputCondition.trim.equals(""))

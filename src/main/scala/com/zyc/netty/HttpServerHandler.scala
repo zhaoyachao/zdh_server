@@ -92,6 +92,8 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter with HttpBaseHandle
         val table = param.getOrElse("table", "").toString
         val result = DataWareHouseSources.desc_table(spark, table)
         defaultResponse(result)
+      } else if (uri.contains("/api/v1/zdh/keeplive")) {
+        defaultResponse(cmdOk)
       } else if (uri.contains("/api/v1/zdh")) {
         etl(param)
       } else if (uri.contains("/api/v1/del")) {
@@ -264,7 +266,6 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter with HttpBaseHandle
   private def etl(param: Map[String, Any]): DefaultFullHttpResponse = {
     //此处任务task_logs_id
     val task_logs_id = param.getOrElse("task_logs_id", "001").toString
-
     //输入数据源信息
     val dsi_Input = param.getOrElse("dsi_Input", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
     //输出数据源信息
@@ -337,13 +338,19 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter with HttpBaseHandle
     val task_logs_id = param.getOrElse("task_logs_id", "001").toString
 
     //输入数据源信息
-    val dsi_EtlInfo = param.getOrElse("dsi_EtlInfo",Map.empty[String, Map[String, Any]]).asInstanceOf[Map[String, Map[String, Any]]]
+    val dsi_EtlInfo = param.getOrElse("dsi_EtlInfo",List.empty[Map[String, Map[String, Any]]]).asInstanceOf[List[Map[String, Map[String, Any]]]]
 
     //输出数据源信息
     val dsi_Output = param.getOrElse("dsi_Output", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
 
     //etl任务信息
     val etlDroolsTaskInfo = param.getOrElse("etlDroolsTaskInfo", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
+
+    //etl-多源任务信息
+    val etlMoreTaskInfo = param.getOrElse("etlMoreTaskInfo", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
+
+    //etl-sql任务信息
+    val sqlTaskInfo = param.getOrElse("sqlTaskInfo", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
 
     //调度任务信息
     val dispatchOptions = param.getOrElse("quartzJobInfo", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
@@ -370,7 +377,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter with HttpBaseHandle
       override def run() = {
         try {
           val spark = SparkBuilder.getSparkSession()
-          DataSources.DataHandlerDrools(spark, task_logs_id, dispatchOptions, dsi_EtlInfo, etlDroolsTaskInfo, outPut,
+          DataSources.DataHandlerDrools(spark, task_logs_id, dispatchOptions, dsi_EtlInfo, etlDroolsTaskInfo,etlMoreTaskInfo,sqlTaskInfo, outPut,
             outPutBaseOptions ++ outputOptions, outPutCols, clear)
         } catch {
           case ex: Exception => {

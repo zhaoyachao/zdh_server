@@ -40,8 +40,9 @@ object DataSources {
     val owner = dispatchOption.getOrElse("owner", "001").toString
     val job_context = dispatchOption.getOrElse("job_context", "001").toString
     MDC.put("job_id", dispatch_task_id)
+    MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "23")
     val spark_tmp=spark.newSession()
-    spark_tmp.sparkContext.setJobGroup(job_context,etlTaskInfo.getOrElse("etl_context",etlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date)
+    spark_tmp.sparkContext.setJobGroup(job_context,etlTaskInfo.getOrElse("etl_context",etlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
     try {
       logger.info("[数据采集]:数据采集开始")
       logger.info("[数据采集]:数据采集日期:" + etl_date)
@@ -97,6 +98,7 @@ object DataSources {
       case a=>a.split(",")
     }
     MDC.put("job_id", dispatch_task_id)
+    MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "23")
     val spark_tmp=spark.newSession()
     val tables = new util.ArrayList[String]();
     try {
@@ -119,7 +121,7 @@ object DataSources {
         val inPut = dsi_Input.getOrElse("data_source_type", "").toString
         val etlTaskInfo = f.getOrElse("etlTaskInfo", Map.empty[String, Any])
 
-        spark_tmp.sparkContext.setJobGroup(job_context,etlTaskInfo.getOrElse("etl_context",etlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date)
+        spark_tmp.sparkContext.setJobGroup(job_context,etlTaskInfo.getOrElse("etl_context",etlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
         //参数
         val inputOptions: Map[String, Any] = etlTaskInfo.getOrElse("data_sources_params_input", "").toString.trim match {
           case "" => Map.empty[String, Any]
@@ -211,8 +213,9 @@ object DataSources {
     val owner = dispatchOption.getOrElse("owner", "001").toString
     val job_context = dispatchOption.getOrElse("job_context", "001").toString
     MDC.put("job_id", dispatch_task_id)
+    MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "23")
     val spark_tmp=spark.newSession()
-    spark_tmp.sparkContext.setJobGroup(job_context,sqlTaskInfo.getOrElse("sql_context",sqlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date)
+    spark_tmp.sparkContext.setJobGroup(job_context,sqlTaskInfo.getOrElse("sql_context",sqlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
     try {
       logger.info("[数据采集]:[SQL]:数据采集开始")
       logger.info("[数据采集]:[SQL]:数据采集日期:" + etl_date)
@@ -266,8 +269,9 @@ object DataSources {
   }
 
 
-  def DataHandlerDrools(spark: SparkSession, task_logs_id: String, dispatchOption: Map[String, Any], dsi_EtlInfo: Map[String, Map[String, Any]],
-                      etlDroolsTaskInfo: Map[String, Any], outPut: String, outputOptions: Map[String, Any], outputCols: Array[Map[String, String]], sql: String): Unit = {
+  def DataHandlerDrools(spark: SparkSession, task_logs_id: String, dispatchOption: Map[String, Any], dsi_EtlInfo: List[Map[String, Map[String, Any]]],
+                      etlDroolsTaskInfo: Map[String, Any],etlMoreTaskInfo: Map[String, Any] ,sqlTaskInfo: Map[String, Any],outPut: String,
+                        outputOptions: Map[String, Any], outputCols: Array[Map[String, String]], sql: String): Unit = {
 
     implicit val dispatch_task_id = dispatchOption.getOrElse("job_id", "001").toString
     val etl_date = JsonUtil.jsonToMap(dispatchOption.getOrElse("params", "").toString).getOrElse("ETL_DATE", "").toString;
@@ -275,6 +279,7 @@ object DataSources {
     val job_context = dispatchOption.getOrElse("job_context", "001").toString
 
     MDC.put("job_id", dispatch_task_id)
+    MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "23")
     val spark_tmp=spark.newSession()
     import spark_tmp.implicits._
     val tables = new util.ArrayList[String]();
@@ -286,20 +291,21 @@ object DataSources {
         //logger.error("多源任务对应的单源任务说明必须包含# 格式 'etl任务说明#临时表名'")
         throw new Exception("Drools任务处理逻辑必须不为空")
       }
-      logger.info("[数据采集]:[Drools]:数据处理规则:\n"+exe_drools)
+      logger.info("[数据采集]:[Drools]:数据处理规则:\n"+exe_drools.replaceAll("\"", ""))
 
       val filter_drools=etlDroolsTaskInfo.getOrElse("data_sources_filter_input", "").toString
 
+      var ds:DataFrame=null
 
-
+      if(etlDroolsTaskInfo.getOrElse("more_task","").toString.equalsIgnoreCase("单源ETL")){
         //调用读取数据源
         //输入数据源信息
-        val dsi_Input = dsi_EtlInfo.getOrElse("dsi_Input", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
+        val dsi_Input = dsi_EtlInfo(0).getOrElse("dsi_Input", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
         //输入数据源类型
         val inPut = dsi_Input.getOrElse("data_source_type", "").toString
-        val etlTaskInfo = dsi_EtlInfo.getOrElse("etlTaskInfo", Map.empty[String, Any])
+        val etlTaskInfo = dsi_EtlInfo(0).getOrElse("etlTaskInfo", Map.empty[String, Any])
 
-        spark_tmp.sparkContext.setJobGroup(job_context,etlTaskInfo.getOrElse("etl_context",etlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date)
+        spark_tmp.sparkContext.setJobGroup(job_context,etlTaskInfo.getOrElse("etl_context",etlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
         //参数
         val inputOptions: Map[String, Any] = etlTaskInfo.getOrElse("data_sources_params_input", "").toString.trim match {
           case "" => Map.empty[String, Any]
@@ -313,12 +319,20 @@ object DataSources {
         val list_map = etlTaskInfo.getOrElse("column_data_list", null).asInstanceOf[List[Map[String, String]]]
         val outPutCols_tmp = list_map.toArray
 
-      if (inPut.toString.toLowerCase.equals("kafka") || inPut.toString.toLowerCase.equals("flume")) {
-        logger.error("Drools任务对应的单源任务 不支持流数据kafka,flume")
-        throw new Exception("Drools任务对应的单源任务 不支持流数据kafka,flume")
+        if (inPut.toString.toLowerCase.equals("kafka") || inPut.toString.toLowerCase.equals("flume")) {
+          logger.error("Drools任务对应的单源任务 不支持流数据kafka,flume")
+          throw new Exception("Drools任务对应的单源任务 不支持流数据kafka,flume")
+        }
+        ds = inPutHandler(spark_tmp, task_logs_id, dispatchOption, etlTaskInfo, inPut, dsi_Input ++ inputOptions, filter, inputCols, null, null, outPutCols_tmp, null)
+      }else if(etlDroolsTaskInfo.getOrElse("more_task","").toString.equalsIgnoreCase("多源ETL")){
+        ds=DataHandlerMore2(spark_tmp,task_logs_id,dispatchOption,dsi_EtlInfo,etlMoreTaskInfo,"")(dispatch_task_id)
+      }else if(etlDroolsTaskInfo.getOrElse("more_task","").toString.equalsIgnoreCase("SQL")){
+        val inputOptions: Map[String, Any] = sqlTaskInfo.getOrElse("data_sources_params_input", "").toString.trim match {
+          case "" => Map.empty[String, Any]
+          case a => JsonUtil.jsonToMap(a)
+        }
+        ds=DataHandlerSql2(spark_tmp,task_logs_id,dispatchOption,sqlTaskInfo,null,inputOptions,sql)(dispatch_task_id)
       }
-
-        val ds = inPutHandler(spark_tmp, task_logs_id, dispatchOption, etlTaskInfo, inPut, dsi_Input ++ inputOptions, filter, inputCols, null, null, outPutCols_tmp, null)
 
 
       //执行drools 逻辑
@@ -401,6 +415,150 @@ object DataSources {
 
   }
 
+
+  def DataHandlerMore2(spark: SparkSession, task_logs_id: String, dispatchOption: Map[String, Any], dsi_EtlInfo: List[Map[String, Map[String, Any]]],
+                      etlMoreTaskInfo: Map[String, Any], sql: String)(implicit dispatch_task_id:String): DataFrame = {
+
+    val etl_date = JsonUtil.jsonToMap(dispatchOption.getOrElse("params", "").toString).getOrElse("ETL_DATE", "").toString;
+    val owner = dispatchOption.getOrElse("owner", "001").toString
+    val job_context = dispatchOption.getOrElse("job_context", "001").toString
+    val drop_tmp_tables=etlMoreTaskInfo.getOrElse("drop_tmp_tables","").toString.trim match {
+      case ""=>Array.empty[String]
+      case a=>a.split(",")
+    }
+    MDC.put("job_id", dispatch_task_id)
+    val spark_tmp=spark.newSession()
+    val tables = new util.ArrayList[String]();
+    try {
+      logger.info("[数据采集]:[Drool]:[多源解析]:数据采集开始")
+      logger.info("[数据采集]:[Drool]:[多源解析]:数据采集日期:" + etl_date)
+      val exe_sql = etlMoreTaskInfo.getOrElse("etl_sql", "").toString.replaceAll("\\$zdh_etl_date", "'" + etl_date + "'")
+      if (exe_sql.trim.equals("")) {
+        //logger.error("多源任务对应的单源任务说明必须包含# 格式 'etl任务说明#临时表名'")
+        throw new Exception("多源任务处理逻辑必须不为空")
+      }
+
+
+      //多源处理
+      dsi_EtlInfo.foreach(f => {
+
+        //调用读取数据源
+        //输入数据源信息
+        val dsi_Input = f.getOrElse("dsi_Input", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
+        //输入数据源类型
+        val inPut = dsi_Input.getOrElse("data_source_type", "").toString
+        val etlTaskInfo = f.getOrElse("etlTaskInfo", Map.empty[String, Any])
+
+        spark_tmp.sparkContext.setJobGroup(job_context,etlTaskInfo.getOrElse("etl_context",etlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
+        //参数
+        val inputOptions: Map[String, Any] = etlTaskInfo.getOrElse("data_sources_params_input", "").toString.trim match {
+          case "" => Map.empty[String, Any]
+          case a => JsonUtil.jsonToMap(a)
+        }
+        //过滤条件
+        val filter = etlTaskInfo.getOrElse("data_sources_filter_input", "").toString
+        //输入字段
+        val inputCols: Array[String] = etlTaskInfo.getOrElse("data_sources_file_columns", "").toString.split(",")
+        //输出字段
+        val list_map = etlTaskInfo.getOrElse("column_data_list", null).asInstanceOf[List[Map[String, String]]]
+        val outPutCols_tmp = list_map.toArray
+
+        //生成table
+        //获取表名
+        if (!etlTaskInfo.getOrElse("etl_context", "").toString.contains("#")) {
+          logger.error("多源任务对应的单源任务说明必须包含# 格式 'etl任务说明#临时表名'")
+          throw new Exception("多源任务对应的单源任务说明必须包含# 格式 'etl任务说明#临时表名'")
+        }
+        if (inPut.toString.toLowerCase.equals("kafka") || inPut.toString.toLowerCase.equals("flume")) {
+          logger.error("多源任务对应的单源任务 不支持流数据kafka,flume")
+          throw new Exception("多源任务对应的单源任务 不支持流数据kafka,flume")
+        }
+
+        val ds = inPutHandler(spark_tmp, task_logs_id, dispatchOption, etlTaskInfo, inPut, dsi_Input ++ inputOptions, filter, inputCols, null, null, outPutCols_tmp, null)
+
+        val tableName = etlTaskInfo.getOrElse("etl_context", "").toString.split("#")(1)
+        ds.createTempView(tableName)
+        tables.add(tableName)
+      })
+
+      //执行sql
+      val exe_sql_ary=exe_sql.split(";\r\n|;\n")
+      var result:DataFrame=null
+      exe_sql_ary.foreach(sql=>{
+        if (!sql.trim.equals(""))
+          result = spark_tmp.sql(sql)
+      })
+
+      return result
+    } catch {
+      case ex: Exception => {
+        ex.printStackTrace()
+        val line=System.getProperty("line.separator")
+        val log=ex.getMessage.split(line).mkString(",")
+        logger.info("[数据采集]:[Drool]:[多源解析]:[ERROR]:" +log.trim)
+        //MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "error", etl_date, "")
+        throw ex
+      }
+    } finally {
+      tables.toArray().foreach(table => {
+        if (spark.catalog.tableExists(table.toString)) {
+          logger.info("[数据采集]:[Drool]:[多源解析]:任务完成清空临时表:" + table.toString)
+          drop_tmp_tables.foreach(table=>{
+            spark.sql("drop view if EXISTS "+table).show()
+          })
+          spark.catalog.dropTempView(table.toString)
+        }
+      })
+
+      SparkSession.clearActiveSession()
+    }
+
+
+  }
+
+
+  def DataHandlerSql2(spark: SparkSession, task_logs_id: String, dispatchOption: Map[String, Any], sqlTaskInfo: Map[String, Any], inPut: String, inputOptions: Map[String, Any],
+                      sql: String)(implicit  dispatch_task_id:String): DataFrame ={
+
+    val etl_date = JsonUtil.jsonToMap(dispatchOption.getOrElse("params", "").toString).getOrElse("ETL_DATE", "").toString;
+    val owner = dispatchOption.getOrElse("owner", "001").toString
+    val job_context = dispatchOption.getOrElse("job_context", "001").toString
+    MDC.put("job_id", dispatch_task_id)
+    val spark_tmp=spark.newSession()
+    spark_tmp.sparkContext.setJobGroup(job_context,sqlTaskInfo.getOrElse("sql_context",sqlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
+    try {
+      logger.info("[数据采集]:[SQL]:数据采集开始")
+      logger.info("[数据采集]:[SQL]:数据采集日期:" + etl_date)
+      val etl_sql=sqlTaskInfo.getOrElse("etl_sql","").toString
+
+      logger.info("[数据采集]:[SQL]:"+etl_sql)
+      if (etl_sql.trim.equals("")) {
+        //logger.error("多源任务对应的单源任务说明必须包含# 格式 'etl任务说明#临时表名'")
+        throw new Exception("SQL任务处理逻辑必须不为空")
+      }
+
+      logger.info("[数据采集]:[SQL]:"+etl_sql)
+
+      val df=DataWareHouseSources.getDS(spark_tmp,dispatchOption,inPut,inputOptions.asInstanceOf[Map[String,String]],
+        null,null,null,null,null,null,etl_sql)
+
+      return df
+    } catch {
+      case ex: Exception => {
+        ex.printStackTrace()
+        logger.error("[数据采集]:[SQL]:[ERROR]:" + ex.getMessage, ex.getCause)
+        //MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "error", etl_date, "")
+       throw ex
+      }
+    } finally {
+
+    }
+
+
+
+
+
+  }
   /**
     * 读取数据源handler
     *

@@ -1,15 +1,15 @@
-package org.apache.spark.sql.hive_jdbc.datasources.hive
+package org.apache.spark.sql.execution.datasources.clickhouse
 
 import java.sql.{Connection, DriverManager}
 import java.util.{Locale, Properties}
 
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 
-class HiveOptions(
+class ClickHouseOptions(
                    @transient val parameters: CaseInsensitiveMap[String])
   extends Serializable {
 
-  import HiveOptions._
+  import ClickHouseOptions._
 
   def this(parameters: Map[String, String]) = this(CaseInsensitiveMap(parameters))
 
@@ -164,18 +164,18 @@ class HiveOptions(
 
 }
 
-class HiveOptionsInWrite(
+class ClickHouseOptionsInWrite(
                           @transient override val parameters: CaseInsensitiveMap[String])
-  extends HiveOptions(parameters) {
+  extends ClickHouseOptions(parameters) {
 
-  import HiveOptions._
+  import ClickHouseOptions._
 
   def this(parameters: Map[String, String]) = this(CaseInsensitiveMap(parameters))
 
   def this(url: String, table: String, parameters: Map[String, String]) = {
     this(CaseInsensitiveMap(parameters ++ Map(
-      HiveOptions.JDBC_URL -> url,
-      HiveOptions.JDBC_TABLE_NAME -> table)))
+      ClickHouseOptions.JDBC_URL -> url,
+      ClickHouseOptions.JDBC_TABLE_NAME -> table)))
   }
 
   require(
@@ -188,7 +188,7 @@ class HiveOptionsInWrite(
 
 
 
-object HiveOptions {
+object ClickHouseOptions {
   private val curId = new java.util.concurrent.atomic.AtomicLong(0L)
   private val jdbcOptionNames = collection.mutable.Set[String]()
 

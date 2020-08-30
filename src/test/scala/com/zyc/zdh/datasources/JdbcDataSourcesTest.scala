@@ -50,4 +50,53 @@ class JdbcDataSourcesTest extends FunSuite with TEST_TRAIT2{
     JdbcDataSources.writeDS(spark,df,inputOptions,"alter table datasets.z1 delete where 1=1")
   }
 
+  test("getGreenplum"){
+
+    implicit val id="001"
+    val dispatchOption = null
+    val inPut = "jdbc"
+    val inputOptions=Map(
+      "driver"->"com.pivotal.jdbc.GreenplumDriver",
+      "url"->"jdbc:pivotal:greenplum://192.168.110.10:5432;DatabaseName=postgres",
+      "dbtable"->"t1",
+      "user"->"zyc",
+      "password"->"123456",
+      "numPartitions"->"1",
+      "isolationLevel"->"NONE"
+    )
+    import org.apache.spark.sql.functions._
+    val dt=spark.range(10).select(col("id"))
+    JdbcDataSources.writeDS(spark,dt,inputOptions,"")
+
+    val df=JdbcDataSources.getDS(spark,dispatchOption,inPut,inputOptions,"",null,null,null,null,null,null )
+
+    df.show(false)
+
+  }
+
+  test("getGreenplum2"){
+
+    implicit val id="001"
+    val dispatchOption = null
+    val inPut = "jdbc"
+    val options =Map(
+      "url"->"jdbc:postgresql://192.168.110.10:5432/",
+    "delimiter"-> "\t",
+      "dbschema"-> "postgres",
+    "dbtable"-> "t1",
+    "user"-> "zyc",
+    "password"-> "123456")
+
+    import org.apache.spark.sql.functions._
+    val df=spark.read.format("org.apache.spark.sql.execution.datasources.greenplum.DefaultSource")
+        .options(options).load()
+
+    df.show(false)
+
+  }
+
+
+
+
+
 }

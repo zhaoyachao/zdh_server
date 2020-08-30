@@ -42,9 +42,10 @@ object LocalDataSources extends ZdhDataSources {
         logger.error("[数据采集]:[外部上传]:[READ]:读取ftp资源")
         logger.error("[数据采集]:[外部上传]:[READ]:读取ftp资源,目前只支持utf-8 编码")
         df = spark.read.
-          format("com.springml.spark.sftp").
+          format("com.zyc.zdh.datasources.sftp.SftpSource").
           schema(schema).
           options(inputOptions).
+          option("inputCols",inputCols.mkString(",")).
           option("host", url).
           option("port", port).
           option("username", username).

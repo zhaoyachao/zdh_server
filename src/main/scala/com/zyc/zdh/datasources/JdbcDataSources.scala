@@ -60,11 +60,11 @@ object JdbcDataSources extends ZdhDataSources{
       //获取jdbc 配置
       var format="jdbc"
       if(inputOptions.getOrElse("url","").toLowerCase.contains("jdbc:hive2:")){
-        format="org.apache.spark.sql.hive_jdbc.datasources.hive.HiveRelationProvider"
+        format="org.apache.spark.sql.execution.datasources.hive.HiveRelationProvider"
         logger.info("[数据采集]:[JDBC]:[READ]:表名:"+inputOptions.getOrElse("dbtable","")+",使用自定义hive-jdbc数据源")
       }
       if(inputOptions.getOrElse("url","").toLowerCase.contains("jdbc:clickhouse:")){
-        format="org.apache.spark.sql.hive_jdbc.datasources.clickhouse.ClickHouseRelationProvider"
+        format="org.apache.spark.sql.execution.datasources.clickhouse.ClickHouseRelationProvider"
         logger.info("[数据采集]:[JDBC]:[READ]:表名:"+inputOptions.getOrElse("dbtable","")+",使用自定义clickhouse-jdbc数据源")
       }
 

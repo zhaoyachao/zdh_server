@@ -1,10 +1,10 @@
-package org.apache.spark.sql.hive_jdbc.datasources.clickhouse
+package org.apache.spark.sql.execution.datasources.hive
 
 import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode}
-import org.apache.spark.sql.hive_jdbc.datasources.clickhouse.ClickHouseUtils._
+import org.apache.spark.sql.execution.datasources.hive.HiveUtils._
 import org.apache.spark.sql.sources.{BaseRelation, CreatableRelationProvider, DataSourceRegister, RelationProvider}
 
-class ClickHouseRelationProvider extends CreatableRelationProvider
+class HiveRelationProvider extends CreatableRelationProvider
   with RelationProvider with DataSourceRegister{
   override def shortName() = "hive_jdbc"
 
@@ -14,16 +14,16 @@ class ClickHouseRelationProvider extends CreatableRelationProvider
     val options = new HiveOptionsInWrite(parameters)
     val isCaseSensitive = sqlContext.conf.caseSensitiveAnalysis
 
-    val conn = ClickHouseUtils.createConnectionFactory(options)()
+    val conn = HiveUtils.createConnectionFactory(options)()
     try {
-      val tableExists = ClickHouseUtils.tableExists(conn, options)
+      val tableExists = HiveUtils.tableExists(conn, options)
       if (tableExists) {
         mode match {
           case SaveMode.Overwrite =>
             if (options.isTruncate && isCascadingTruncateTable(options.url) == Some(false)) {
               // In this case, we should truncate table and then load.
               truncateTable(conn, options)
-              val tableSchema = ClickHouseUtils.getSchemaOption(conn, options)
+              val tableSchema = HiveUtils.getSchemaOption(conn, options)
               saveTable(df, tableSchema, isCaseSensitive, options)
             } else {
               // Otherwise, do not truncate the table, instead drop and recreate it
@@ -33,7 +33,7 @@ class ClickHouseRelationProvider extends CreatableRelationProvider
             }
 
           case SaveMode.Append =>
-            val tableSchema = ClickHouseUtils.getSchemaOption(conn, options)
+            val tableSchema = HiveUtils.getSchemaOption(conn, options)
             saveTable(df, tableSchema, isCaseSensitive, options)
 
           case SaveMode.ErrorIfExists =>

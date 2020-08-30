@@ -1,4 +1,4 @@
-package org.apache.spark.sql.hive_jdbc.datasources.clickhouse
+package org.apache.spark.sql.execution.datasources.hive
 
 import java.sql.{Date, Timestamp}
 
@@ -140,7 +140,7 @@ private[sql] object HiveRelation extends Logging {
                                                      columnName: String,
                                                      resolver: Resolver,
                                                      jdbcOptions: HiveOptions): (String, DataType) = {
-    val dialect = ClickHouseDialect
+    val dialect = HiveDialect
     val column = schema.find { f =>
       resolver(f.name, columnName) || resolver(dialect.quoteIdentifier(f.name), columnName)
     }.getOrElse {
@@ -193,9 +193,9 @@ private[sql] object HiveRelation extends Logging {
     * @return resolved Catalyst schema of a JDBC table
     */
   def getSchema(resolver: Resolver, jdbcOptions: HiveOptions): StructType = {
-    val tableSchema = ClickHouseRDD.resolveTable(jdbcOptions)
+    val tableSchema = HiveRDD.resolveTable(jdbcOptions)
     jdbcOptions.customSchema match {
-      case Some(customSchema) => ClickHouseUtils.getCustomSchema(
+      case Some(customSchema) => HiveUtils.getCustomSchema(
         tableSchema, customSchema, resolver)
       case None => tableSchema
     }
@@ -225,7 +225,7 @@ case class HiveRelation(
 
   override def buildScan(requiredColumns: Array[String], filters: Array[Filter]): RDD[Row] = {
 
-    val rowsIterator = ClickHouseRDD.scanTable(
+    val rowsIterator = HiveRDD.scanTable(
       sparkSession.sparkContext,
       schema,
       requiredColumns,

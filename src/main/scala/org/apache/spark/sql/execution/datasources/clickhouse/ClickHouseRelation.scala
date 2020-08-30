@@ -1,4 +1,4 @@
-package org.apache.spark.sql.hive_jdbc.datasources.hive
+package org.apache.spark.sql.execution.datasources.clickhouse
 
 import java.sql.{Date, Timestamp}
 
@@ -49,9 +49,9 @@ private[sql] object HiveRelation extends Logging {
                        schema: StructType,
                        resolver: Resolver,
                        timeZoneId: String,
-                       jdbcOptions: HiveOptions): Array[Partition] = {
+                       jdbcOptions: ClickHouseOptions): Array[Partition] = {
     val partitioning = {
-      import HiveOptions._
+      import ClickHouseOptions._
 
       val partitionColumn = jdbcOptions.partitionColumn
       val lowerBound = jdbcOptions.lowerBound
@@ -139,8 +139,8 @@ private[sql] object HiveRelation extends Logging {
                                                      schema: StructType,
                                                      columnName: String,
                                                      resolver: Resolver,
-                                                     jdbcOptions: HiveOptions): (String, DataType) = {
-    val dialect = HiveDialect
+                                                     jdbcOptions: ClickHouseOptions): (String, DataType) = {
+    val dialect = ClickHouseDialect
     val column = schema.find { f =>
       resolver(f.name, columnName) || resolver(dialect.quoteIdentifier(f.name), columnName)
     }.getOrElse {
@@ -192,10 +192,10 @@ private[sql] object HiveRelation extends Logging {
     * @param jdbcOptions JDBC options that contains url, table and other information.
     * @return resolved Catalyst schema of a JDBC table
     */
-  def getSchema(resolver: Resolver, jdbcOptions: HiveOptions): StructType = {
-    val tableSchema = HiveRDD.resolveTable(jdbcOptions)
+  def getSchema(resolver: Resolver, jdbcOptions: ClickHouseOptions): StructType = {
+    val tableSchema = ClickHouseRDD.resolveTable(jdbcOptions)
     jdbcOptions.customSchema match {
-      case Some(customSchema) => HiveUtils.getCustomSchema(
+      case Some(customSchema) => ClickHouseUtils.getCustomSchema(
         tableSchema, customSchema, resolver)
       case None => tableSchema
     }
@@ -206,18 +206,18 @@ private[sql] object HiveRelation extends Logging {
     */
   def apply(
              parts: Array[Partition],
-             jdbcOptions: HiveOptions)(
-             sparkSession: SparkSession): HiveRelation = {
+             jdbcOptions: ClickHouseOptions)(
+             sparkSession: SparkSession): ClickHouseRelation = {
     val schema = HiveRelation.getSchema(sparkSession.sessionState.conf.resolver, jdbcOptions)
-    HiveRelation(schema, parts, jdbcOptions)(sparkSession)
+    ClickHouseRelation(schema, parts, jdbcOptions)(sparkSession)
   }
 }
 
 
-case class HiveRelation(
+case class ClickHouseRelation(
                          override val schema: StructType,
                          parts: Array[Partition],
-                         jdbcOptions: HiveOptions)(@transient val sparkSession: SparkSession)
+                         jdbcOptions: ClickHouseOptions)(@transient val sparkSession: SparkSession)
   extends BaseRelation
     with PrunedFilteredScan
     with InsertableRelation {
@@ -225,7 +225,7 @@ case class HiveRelation(
 
   override def buildScan(requiredColumns: Array[String], filters: Array[Filter]): RDD[Row] = {
 
-    val rowsIterator = HiveRDD.scanTable(
+    val rowsIterator = ClickHouseRDD.scanTable(
       sparkSession.sparkContext,
       schema,
       requiredColumns,

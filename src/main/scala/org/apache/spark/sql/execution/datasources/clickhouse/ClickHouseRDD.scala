@@ -1,4 +1,4 @@
-package org.apache.spark.sql.hive_jdbc.datasources.hive
+package org.apache.spark.sql.execution.datasources.clickhouse
 
 import java.sql.{Connection, PreparedStatement, ResultSet}
 
@@ -15,21 +15,21 @@ import org.apache.spark.util.CompletionIterator
 import scala.util.control.NonFatal
 
 
-object HiveRDD{
+object ClickHouseRDD{
 
 
-  def resolveTable(options: HiveOptions): StructType = {
+  def resolveTable(options: ClickHouseOptions): StructType = {
     val url = options.url
     val table = options.tableOrQuery
-    val dialect = HiveDialect
-    val conn: Connection = HiveUtils.createConnectionFactory(options)()
+    val dialect = ClickHouseDialect
+    val conn: Connection = ClickHouseUtils.createConnectionFactory(options)()
     try {
       val statement = conn.prepareStatement(dialect.getSchemaQuery(table))
       try {
         //statement.setQueryTimeout(options.queryTimeout)
         val rs = statement.executeQuery()
         try {
-          HiveUtils.getSchema(rs, dialect, alwaysNullable = true)
+          ClickHouseUtils.getSchema(rs, dialect, alwaysNullable = true)
         } finally {
           rs.close()
         }
@@ -104,13 +104,13 @@ object HiveRDD{
                  requiredColumns: Array[String],
                  filters: Array[Filter],
                  parts: Array[Partition],
-                 options: HiveOptions): RDD[InternalRow] = {
+                 options: ClickHouseOptions): RDD[InternalRow] = {
     val url = options.url
-    val dialect =HiveDialect
+    val dialect =ClickHouseDialect
     val quotedColumns = requiredColumns.map(colName => dialect.quoteIdentifier(colName))
-    new HiveRDD(
+    new ClickHouseRDD(
       sc,
-      HiveUtils.createConnectionFactory(options),
+      ClickHouseUtils.createConnectionFactory(options),
       pruneSchema(schema, requiredColumns),
       quotedColumns,
       filters,
@@ -122,7 +122,7 @@ object HiveRDD{
 }
 
 
-class HiveRDD(
+class ClickHouseRDD(
                sc: SparkContext,
                getConnection: () => Connection,
                schema: StructType,
@@ -130,7 +130,7 @@ class HiveRDD(
                filters: Array[Filter],
                partitions: Array[Partition],
                url: String,
-               options: HiveOptions)
+               options: ClickHouseOptions)
   extends RDD[InternalRow](sc, Nil) {
 
   /**
@@ -152,7 +152,7 @@ class HiveRDD(
     */
   private val filterWhereClause: String =
     filters
-      .flatMap(HiveRDD.compileFilter(_, HiveDialect))
+      .flatMap(ClickHouseRDD.compileFilter(_, ClickHouseDialect))
       .map(p => s"($p)").mkString(" AND ")
 
   /**
@@ -219,7 +219,7 @@ class HiveRDD(
     val inputMetrics = context.taskMetrics().inputMetrics
     val part = thePart.asInstanceOf[HivePartition]
     conn = getConnection()
-    val dialect = HiveDialect
+    val dialect = ClickHouseDialect
     import scala.collection.JavaConverters._
     dialect.beforeFetch(conn, options.asProperties.asScala.toMap)
 
@@ -278,7 +278,7 @@ class HiveRDD(
   //  stmt.close()
    // rs.close()
 
-    val rowsIterator = HiveUtils.resultSetToSparkInternalRows(rs, schema, inputMetrics)
+    val rowsIterator = ClickHouseUtils.resultSetToSparkInternalRows(rs, schema, inputMetrics)
 //    rowsIterator.map(encoder.fromRow(_))
 //    println(rowsIterator.size)
 //

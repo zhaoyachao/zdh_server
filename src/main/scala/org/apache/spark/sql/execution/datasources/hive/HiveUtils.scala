@@ -1,4 +1,4 @@
-package org.apache.spark.sql.hive_jdbc.datasources.clickhouse
+package org.apache.spark.sql.execution.datasources.hive
 
 import java.sql.{Connection, Driver, DriverManager, JDBCType, PreparedStatement, ResultSet, ResultSetMetaData, SQLException}
 import java.util.Locale
@@ -26,7 +26,7 @@ import org.apache.spark.util.NextIterator
 /**
   * Util functions for JDBC tables.
   */
-object ClickHouseUtils extends Logging {
+object HiveUtils extends Logging {
   /**
     * Returns a factory for creating connections to the given JDBC URL.
     *
@@ -278,16 +278,16 @@ object ClickHouseUtils extends Logging {
       val columnName = rsmd.getColumnLabel(i + 1)
       val dataType = rsmd.getColumnType(i + 1)
       val typeName = rsmd.getColumnTypeName(i + 1)
-      val fieldSize = i+1//rsmd.getPrecision(i + 1)
-      val fieldScale = i+1//rsmd.getScale(i + 1)
+      val fieldSize = rsmd.getPrecision(i + 1)
+      val fieldScale = rsmd.getScale(i + 1)
       val isSigned = {
         try {
-          rsmd.isSigned(i)
+          rsmd.isSigned(i + 1)
         } catch {
           // Workaround for HIVE-14684:
           case e: SQLException if
           e.getMessage == "Method not supported" &&
-            rsmd.getClass.getName == "com.github.housepower.jdbc.ClickHouseDriver" => true
+            rsmd.getClass.getName == "org.apache.hive.jdbc.HiveResultSetMetaData" => true
         }
       }
       val nullable = if (alwaysNullable) {
@@ -805,7 +805,7 @@ object ClickHouseUtils extends Logging {
                  options: HiveOptionsInWrite): Unit = {
     val url = options.url
     val table = options.table
-    val dialect = ClickHouseDialect
+    val dialect = HiveDialect
     val rddSchema = df.schema
     val getConnection: () => Connection = createConnectionFactory(options)
     val batchSize = options.batchSize

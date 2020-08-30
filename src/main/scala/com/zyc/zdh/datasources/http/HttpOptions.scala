@@ -1,4 +1,4 @@
-package com.zyc.zdh.datasources.http.datasources
+package com.zyc.zdh.datasources.http
 
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 

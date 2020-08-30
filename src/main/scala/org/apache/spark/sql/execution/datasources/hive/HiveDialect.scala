@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.spark.sql.hive_jdbc.datasources.clickhouse
+package org.apache.spark.sql.execution.datasources.hive
 
 import java.sql.Types
 
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.types.{BooleanType, DataType, LongType, MetadataBuilder}
 
-private case object ClickHouseDialect extends JdbcDialect {
+private case object HiveDialect extends JdbcDialect {
 
   override def canHandle(url : String): Boolean = url.startsWith("jdbc:mysql")
 

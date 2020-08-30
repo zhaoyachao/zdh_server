@@ -1,4 +1,4 @@
-package org.apache.spark.sql.hive_jdbc.datasources.hive
+package org.apache.spark.sql.execution.datasources.clickhouse
 
 import java.sql.{Driver, DriverManager}
 

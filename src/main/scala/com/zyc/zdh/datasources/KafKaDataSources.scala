@@ -5,7 +5,7 @@ import java.util.concurrent.{LinkedBlockingQueue, ThreadPoolExecutor, TimeUnit}
 
 import com.zyc.base.util.JsonSchemaBuilder
 import com.zyc.common.RedisCommon
-import com.zyc.zdh.ZdhDataSources
+import com.zyc.zdh.{DataSources, ZdhDataSources}
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord, RecordMetadata}
 import org.apache.kafka.common.TopicPartition
@@ -59,13 +59,13 @@ object KafKaDataSources extends ZdhDataSources {
     val groupId = inputOptions.getOrElse("groupId", "g1")
 
 
-    createKafkaDataSources(spark, brokers, topics, groupId, inputOptions, inputCols, outputCols, outputOptionions, inputCondition)
+    createKafkaDataSources(spark, brokers, topics, groupId, inputOptions, inputCols, outPut, outputCols, outputOptionions, inputCondition, sql)
 
     null
   }
 
-  def createKafkaDataSources(spark: SparkSession, brokers: String, topics: String, groupId: String, options: Map[String, String], cols: Array[String], outputCols: Array[Map[String, String]], outputOptions: Map[String, String],
-                             inputCondition: String)(implicit dispatch_task_id: String): Unit = {
+  def createKafkaDataSources(spark: SparkSession, brokers: String, topics: String, groupId: String, options: Map[String, String], cols: Array[String], outPut: String, outputCols: Array[Map[String, String]], outputOptions: Map[String, String],
+                             inputCondition: String, sql: String)(implicit dispatch_task_id: String): Unit = {
     logger.info("[数据采集]:[KAFKA]:[READ]:TOPIC:" + topics + ",其他参数:," + options.mkString(",") + " [FILTER]:" + inputCondition)
     //获取jdbc 配置
     if (kafkaInstance.size() < 10) {
@@ -73,22 +73,25 @@ object KafKaDataSources extends ZdhDataSources {
       threadpool.execute(new Runnable {
         override def run(): Unit = {
 
-          if(RedisCommon.isRedis().isEmpty){
+          if (RedisCommon.isRedis().isEmpty) {
             logger.info("[数据采集]:[KAFKA]:[READ]:不使用第三方存储offset")
-            defOffset(spark, brokers, topics, groupId, options, cols, outputCols, outputOptions, inputCondition)
-          }else{
+            defOffset(spark, brokers, topics, groupId, options, cols, outPut, outputCols, outputOptions, inputCondition, sql)
+          } else {
             logger.info("[数据采集]:[KAFKA]:[READ]:使用redis存储offset")
-            redisOffset(spark, brokers, topics, groupId, options, cols, outputCols, outputOptions, inputCondition)
+            redisOffset(spark, brokers, topics, groupId, options, cols, outPut, outputCols, outputOptions, inputCondition, sql)
           }
-        }})
+        }
+      })
     } else {
 
     }
 
   }
 
-  def redisOffset(spark: SparkSession, brokers: String, topics: String, groupId: String, options: Map[String, String], cols: Array[String], outputCols: Array[Map[String, String]], outputOptions: Map[String, String],
-                  inputCondition: String)(implicit dispatch_task_id: String): Unit={
+  def redisOffset(spark: SparkSession, brokers: String, topics: String, groupId: String, options: Map[String, String], cols: Array[String],
+                  outPut: String,
+                  outputCols: Array[Map[String, String]], outputOptions: Map[String, String],
+                  inputCondition: String, sql: String)(implicit dispatch_task_id: String): Unit = {
     import org.apache.spark.streaming._
     import org.apache.spark.streaming.kafka010._
     val ssc = new StreamingContext(spark.sparkContext, Seconds(2))
@@ -97,8 +100,8 @@ object KafKaDataSources extends ZdhDataSources {
     // Create direct kafka stream with brokers and topics
     val topicsSet = topics.split(",").toSet
     var sep = options.getOrElse("sep", ",")
-    if(sep.size>1){
-      sep=sepConvert(sep)
+    if (sep.size > 1) {
+      sep = sepConvert(sep)
     }
     //判断消息类型
     val msgType = options.getOrElse("msgType", "csv")
@@ -115,20 +118,20 @@ object KafKaDataSources extends ZdhDataSources {
 
     //设置每个分区起始的Offset
     import scala.collection.JavaConverters._
-    val fromOffsets = topicsSet.map(topic=>{
-      val keys=RedisCommon.keys(topic+"_*")
-      val fromOffsets_tmp=keys.toArray.zipWithIndex.map(p=>{
+    val fromOffsets = topicsSet.map(topic => {
+      val keys = RedisCommon.keys(topic + "_*")
+      val fromOffsets_tmp = keys.toArray.zipWithIndex.map(p => {
 
-        val offset:Int=RedisCommon.get(topic+"_"+p._2) match {
-          case null=>0
-          case ""=>0
-          case a=>a.toInt
+        val offset: Int = RedisCommon.get(topic + "_" + p._2) match {
+          case null => 0
+          case "" => 0
+          case a => a.toInt
         }
-        (new TopicPartition(topic,p._2) -> offset.asInstanceOf[java.lang.Long])
+        (new TopicPartition(topic, p._2) -> offset.asInstanceOf[java.lang.Long])
       })
       fromOffsets_tmp
     }).flatten.toMap
-    logger.info("获取offset 下标:"+fromOffsets.mkString(","))
+    logger.info("获取offset 下标:" + fromOffsets.mkString(","))
     val fromOffsets2 = JavaConverters.mapAsJavaMapConverter(fromOffsets).asJava
 
 
@@ -157,7 +160,7 @@ object KafKaDataSources extends ZdhDataSources {
       }
 
       if (tmp != null && !tmp.isEmpty)
-        JdbcDataSources.writeDS(spark, tmp, outputOptions, "")
+        DataSources.outPutHandler(spark, tmp, outPut, outputOptions, outputCols, sql)
 
       offsetRanges.foreach { offsetRange =>
         println("partition : " + offsetRange.partition + " fromOffset:  " + offsetRange.fromOffset + " untilOffset: " + offsetRange.untilOffset)
@@ -176,8 +179,10 @@ object KafKaDataSources extends ZdhDataSources {
 
   }
 
-  def defOffset(spark: SparkSession, brokers: String, topics: String, groupId: String, options: Map[String, String], cols: Array[String], outputCols: Array[Map[String, String]], outputOptions: Map[String, String],
-                inputCondition: String)(implicit dispatch_task_id: String): Unit={
+  def defOffset(spark: SparkSession, brokers: String, topics: String, groupId: String, options: Map[String, String], cols: Array[String],
+                outPut: String,
+                outputCols: Array[Map[String, String]], outputOptions: Map[String, String],
+                inputCondition: String, sql: String)(implicit dispatch_task_id: String): Unit = {
     import org.apache.spark.streaming._
     import org.apache.spark.streaming.kafka010._
     val ssc = new StreamingContext(spark.sparkContext, Seconds(2))
@@ -186,8 +191,8 @@ object KafKaDataSources extends ZdhDataSources {
     // Create direct kafka stream with brokers and topics
     val topicsSet = topics.split(",").toSet
     var sep = options.getOrElse("sep", ",")
-    if(sep.size>1){
-      sep=sepConvert(sep)
+    if (sep.size > 1) {
+      sep = sepConvert(sep)
     }
 
     //判断消息类型
@@ -201,9 +206,6 @@ object KafKaDataSources extends ZdhDataSources {
       ConsumerConfig.GROUP_ID_CONFIG -> groupId,
       ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG -> classOf[StringDeserializer],
       ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG -> classOf[StringDeserializer])
-
-
-
 
 
     val messages = KafkaUtils.createDirectStream[String, String](
@@ -229,8 +231,7 @@ object KafKaDataSources extends ZdhDataSources {
       }
 
       if (tmp != null && !tmp.isEmpty)
-        JdbcDataSources.writeDS(spark, tmp, outputOptions, "")
-
+        DataSources.outPutHandler(spark, tmp, outPut, outputOptions, outputCols, sql)
     })
 
 
@@ -239,7 +240,7 @@ object KafKaDataSources extends ZdhDataSources {
 
   }
 
-  def sepConvert(sep:String): String ={
+  def sepConvert(sep: String): String = {
     var sep_tmp = sep.replace("\\", "\\\\")
     if (sep_tmp.contains('$')) {
       sep_tmp = sep_tmp.replace("$", "\\$")

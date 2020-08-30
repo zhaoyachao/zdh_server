@@ -1,29 +1,29 @@
-package org.apache.spark.sql.hive_jdbc.datasources.hive
+package org.apache.spark.sql.execution.datasources.clickhouse
 
 import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode}
-import org.apache.spark.sql.hive_jdbc.datasources.hive.HiveUtils._
+import org.apache.spark.sql.execution.datasources.clickhouse.ClickHouseUtils._
 import org.apache.spark.sql.sources.{BaseRelation, CreatableRelationProvider, DataSourceRegister, RelationProvider}
 
-class HiveRelationProvider extends CreatableRelationProvider
+class ClickHouseRelationProvider extends CreatableRelationProvider
   with RelationProvider with DataSourceRegister{
-  override def shortName() = "hive_jdbc"
+  override def shortName() = "clickhouse_jdbc"
 
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode, parameters: Map[String, String],
                               df: DataFrame) = {
-    val options = new HiveOptionsInWrite(parameters)
+    val options = new ClickHouseOptionsInWrite(parameters)
     val isCaseSensitive = sqlContext.conf.caseSensitiveAnalysis
 
-    val conn = HiveUtils.createConnectionFactory(options)()
+    val conn = ClickHouseUtils.createConnectionFactory(options)()
     try {
-      val tableExists = HiveUtils.tableExists(conn, options)
+      val tableExists = ClickHouseUtils.tableExists(conn, options)
       if (tableExists) {
         mode match {
           case SaveMode.Overwrite =>
             if (options.isTruncate && isCascadingTruncateTable(options.url) == Some(false)) {
               // In this case, we should truncate table and then load.
               truncateTable(conn, options)
-              val tableSchema = HiveUtils.getSchemaOption(conn, options)
+              val tableSchema = ClickHouseUtils.getSchemaOption(conn, options)
               saveTable(df, tableSchema, isCaseSensitive, options)
             } else {
               // Otherwise, do not truncate the table, instead drop and recreate it
@@ -33,7 +33,7 @@ class HiveRelationProvider extends CreatableRelationProvider
             }
 
           case SaveMode.Append =>
-            val tableSchema = HiveUtils.getSchemaOption(conn, options)
+            val tableSchema = ClickHouseUtils.getSchemaOption(conn, options)
             saveTable(df, tableSchema, isCaseSensitive, options)
 
           case SaveMode.ErrorIfExists =>
@@ -60,12 +60,12 @@ class HiveRelationProvider extends CreatableRelationProvider
   override def createRelation(sqlContext: SQLContext, parameters: Map[String, String]):BaseRelation = {
 
     import sqlContext.implicits._
-    val hiveOptions = new HiveOptions(parameters)
+    val hiveOptions = new ClickHouseOptions(parameters)
     val resolver = sqlContext.conf.resolver
     val timeZoneId = sqlContext.conf.sessionLocalTimeZone
     val schema = HiveRelation.getSchema(resolver, hiveOptions)
     val parts = HiveRelation.columnPartition(schema, resolver, timeZoneId, hiveOptions)
-    HiveRelation(schema, parts, hiveOptions)(sqlContext.sparkSession)
+    ClickHouseRelation(schema, parts, hiveOptions)(sqlContext.sparkSession)
 
   }
 

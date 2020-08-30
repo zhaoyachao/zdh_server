@@ -1,21 +1,15 @@
 package com.zyc.zdh.datasources
 
 import java.net.InetSocketAddress
-import java.util.Properties
 import java.util.concurrent.{LinkedBlockingQueue, ThreadPoolExecutor, TimeUnit}
 
 import com.zyc.base.util.JsonSchemaBuilder
-import com.zyc.zdh.ZdhDataSources
-import org.apache.kafka.clients.consumer.ConsumerConfig
-import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord, RecordMetadata}
-import org.apache.kafka.common.serialization.StringDeserializer
-import org.apache.spark.broadcast.Broadcast
+import com.zyc.zdh.{DataSources, ZdhDataSources}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{Column, DataFrame, SparkSession}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.StreamingContext
-import org.apache.spark.streaming.dstream.ReceiverInputDStream
-import org.apache.spark.streaming.flume.{FlumeUtils, SparkFlumeEvent}
+import org.apache.spark.streaming.flume.FlumeUtils
 import org.slf4j.LoggerFactory
 
 //Kafka 	spark-streaming-kafka-0-10_2.12
@@ -52,13 +46,15 @@ object FlumeDataSources extends ZdhDataSources {
     }
 
 
-    createFlumeDataSources(spark, brokers, "", "", inputOptions, inputCols, outputCols, outputOptionions, inputCondition)
+    createFlumeDataSources(spark, brokers, "", "", inputOptions, inputCols,outPut, outputCols, outputOptionions, inputCondition,sql)
 
     null
   }
 
-  def createFlumeDataSources(spark: SparkSession, brokers: String, topics: String, groupId: String, options: Map[String, String], cols: Array[String], outputCols: Array[Map[String, String]], outputOptions: Map[String, String],
-                             inputCondition: String)(implicit dispatch_task_id: String): Unit = {
+  def createFlumeDataSources(spark: SparkSession, brokers: String, topics: String, groupId: String, options: Map[String, String], cols: Array[String],
+                             outPut:String,
+                             outputCols: Array[Map[String, String]], outputOptions: Map[String, String],
+                             inputCondition: String,sql:String)(implicit dispatch_task_id: String): Unit = {
     logger.info("[数据采集]:[FLUME]:[READ]:其他参数:," + options.mkString(",") + " [FILTER]:" + inputCondition)
     //获取jdbc 配置
     if (flumeInstance.size() < 10) {
@@ -66,7 +62,6 @@ object FlumeDataSources extends ZdhDataSources {
       threadpool.execute(new Runnable {
         override def run(): Unit = {
           import org.apache.spark.streaming._
-          import org.apache.spark.streaming.kafka010._
           import spark.implicits._
           val ssc = new StreamingContext(spark.sparkContext, Seconds(5))
           flumeInstance.put(dispatch_task_id, ssc)
@@ -96,7 +91,7 @@ object FlumeDataSources extends ZdhDataSources {
             }
 
             if (tmp != null && !tmp.isEmpty)
-              JdbcDataSources.writeDS(spark, tmp, outputOptions, "")
+              DataSources.outPutHandler(spark, tmp, outPut, outputOptions, outputCols, sql)
           })
 
           ssc.start()

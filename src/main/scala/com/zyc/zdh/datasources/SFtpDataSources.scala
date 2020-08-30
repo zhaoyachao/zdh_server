@@ -39,9 +39,10 @@ object SFtpDataSources extends ZdhDataSources {
       val schema=JsonSchemaBuilder.getJsonSchema(inputCols.mkString(","))
       logger.info("[数据采集]:[SFTP]:[READ]:paths:"+url+":"+port+paths)
       val df = spark.read.
-        format("com.springml.spark.sftp").
+        format("com.zyc.zdh.datasources.sftp.SftpSource").
         schema(schema).
         options(inputOptions).
+        option("inputCols",inputCols.mkString(",")).
         option("host", url).
         option("port",port).
         option("username", username).

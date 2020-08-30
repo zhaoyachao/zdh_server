@@ -1,6 +1,7 @@
 package com.zyc.common
 
 import java.sql.{Connection, DriverManager, Timestamp}
+import java.util
 import java.util.{Calendar, Date, Properties}
 
 import com.zyc.base.util.{DateUtil, JsonUtil}
@@ -61,7 +62,7 @@ object MariadbCommon {
   }
 
 
-  def insertZdhHaInfo(zdh_instance:String,zdh_host:String,zdh_port:String,web_port:String): Unit ={
+  def insertZdhHaInfo(zdh_instance:String,zdh_host:String,zdh_port:String,web_port:String,applicationId:String,spark_history_server:String,master:String): Unit ={
     if (connection == null){
       synchronized {
         logger.info("数据库未初始化连接,尝试初始化连接")
@@ -81,10 +82,10 @@ object MariadbCommon {
       logger.info("数据库连接失效,重连成功")
     }
     try {
-      updateZdhHaInfo(zdh_instance,zdh_host,zdh_port,web_port)
+      delZdhHaInfo("enabled",zdh_host,zdh_port)
       logger.info(s"开始插入zdh_ha_info:${zdh_instance},IP:${zdh_host},PORT:${zdh_port},WEB_PORT:${web_port}")
       //ETL_DATE,MODEL_NAME,STATUS,START_TIME,END_TIME
-      val sql = s"insert into zdh_ha_info (zdh_instance,zdh_url,zdh_host,zdh_port,web_port,zdh_status) values(?,?,?,?,?,?)"
+      val sql = s"insert into zdh_ha_info (zdh_instance,zdh_url,zdh_host,zdh_port,web_port,zdh_status,application_id,history_server,master) values(?,?,?,?,?,?,?,?,?)"
       val statement = connection.prepareStatement(sql)
       statement.setString(1, zdh_instance)
       statement.setString(2, "http://"+zdh_host+":"+zdh_port+"/api/v1/zdh")
@@ -92,6 +93,9 @@ object MariadbCommon {
       statement.setString(4,zdh_port)
       statement.setString(5,web_port)
       statement.setString(6,"enabled")
+      statement.setString(7,applicationId)
+      statement.setString(8,spark_history_server)
+      statement.setString(9,master)
       statement.execute()
       logger.info(s"完成插入zdh_ha_info:${zdh_instance},IP:${zdh_host},PORT:${zdh_port},WEB_PORT:${web_port}")
     } catch {
@@ -103,7 +107,7 @@ object MariadbCommon {
 
   }
 
-  def updateZdhHaInfo(zdh_instance:String,zdh_host:String,zdh_port:String,web_port:String): Unit ={
+  def updateZdhHaInfo(zdh_instance:String,zdh_host:String,zdh_port:String,web_port:String,status:String="enabled"): Unit ={
     if (connection == null){
       synchronized {
         logger.info("数据库未初始化连接,尝试初始化连接")
@@ -124,7 +128,7 @@ object MariadbCommon {
     }
     try {
       logger.info(s"开始更新zdh_ha_info状态为enabled")
-      val update_sql=s"update zdh_ha_info set zdh_status='disabled' where zdh_status='enabled' and zdh_instance=? and zdh_url=? and zdh_host=?" +
+      val update_sql=s"update zdh_ha_info set zdh_status='disabled' where zdh_status='${status}' and zdh_instance=? and zdh_url=? and zdh_host=?" +
         " and zdh_port=? and web_port=?"
       val stat_update=connection.prepareStatement(update_sql)
       stat_update.setString(1,zdh_instance)
@@ -142,6 +146,113 @@ object MariadbCommon {
       }
     }
 
+  }
+
+  def delZdhHaInfo(id:String): Unit ={
+    if (connection == null){
+      synchronized {
+        logger.info("数据库未初始化连接,尝试初始化连接")
+        if (connection == null) {
+          if(!getConnect())
+            throw new Exception("connection mariadb fail,could not get connection ")
+        }
+        logger.info("数据库完成初始化连接")
+      }
+    }
+
+    if (connection != null && !connection.isValid(5000)) {
+      logger.info("数据库连接失效,尝试重新连接")
+      connection.close()
+      if (!getConnect())
+        throw new Exception("connection mariadb fail,could not get connection ")
+      logger.info("数据库连接失效,重连成功")
+    }
+    try {
+      logger.info(s"开始删除zdh_ha_info,id:${id}")
+      val update_sql=s"delete from zdh_ha_info where zdh_status='enabled' and id=${id} "
+      val stat_update=connection.prepareStatement(update_sql)
+      stat_update.execute()
+      logger.info(s"删除zdh_ha_info")
+
+    } catch {
+      case ex: Exception => {
+        logger.error("ZDH_HA_INFO插入数据时出现错误", ex.getCause)
+        throw ex
+      }
+    }
+  }
+
+  def delZdhHaInfo(status:String,host:String,port:String): Unit ={
+    if (connection == null){
+      synchronized {
+        logger.info("数据库未初始化连接,尝试初始化连接")
+        if (connection == null) {
+          if(!getConnect())
+            throw new Exception("connection mariadb fail,could not get connection ")
+        }
+        logger.info("数据库完成初始化连接")
+      }
+    }
+
+    if (connection != null && !connection.isValid(5000)) {
+      logger.info("数据库连接失效,尝试重新连接")
+      connection.close()
+      if (!getConnect())
+        throw new Exception("connection mariadb fail,could not get connection ")
+      logger.info("数据库连接失效,重连成功")
+    }
+    try {
+      logger.info(s"开始删除zdh_ha_info")
+      val update_sql=s"delete from zdh_ha_info where zdh_status='${status}' and zdh_host='${host}' and zdh_port='${port}' "
+      val stat_update=connection.prepareStatement(update_sql)
+      stat_update.execute()
+      logger.info(s"删除zdh_ha_info")
+
+    } catch {
+      case ex: Exception => {
+        logger.error("ZDH_HA_INFO插入数据时出现错误", ex.getCause)
+        throw ex
+      }
+    }
+  }
+
+  def getZdhHaInfo(): Seq[Map[String,String]] ={
+    if (connection == null){
+      synchronized {
+        logger.info("数据库未初始化连接,尝试初始化连接")
+        if (connection == null) {
+          if(!getConnect())
+            throw new Exception("connection mariadb fail,could not get connection ")
+        }
+        logger.info("数据库完成初始化连接")
+      }
+    }
+
+    if (connection != null && !connection.isValid(5000)) {
+      logger.info("数据库连接失效,尝试重新连接")
+      connection.close()
+      if (!getConnect())
+        throw new Exception("connection mariadb fail,could not get connection ")
+      logger.info("数据库连接失效,重连成功")
+    }
+    try {
+      logger.debug(s"开始查询zdh_ha_info状态为enabled")
+      val query_sql=s"select * from zdh_ha_info where zdh_status='enabled'"
+      val stat_query=connection.prepareStatement(query_sql)
+      val resultSet=stat_query.executeQuery()
+      val list=new util.ArrayList[Map[String,String]]()
+      while (resultSet.next()) {
+        list.add(Map("zdh_host"->resultSet.getString("zdh_host"),"zdh_port"->resultSet.getString("zdh_port"),"id"->resultSet.getString("id")))
+      }
+      import collection.mutable._
+      import collection.JavaConverters._
+      list.asScala.toSeq
+    } catch {
+      case ex: Exception => {
+        logger.error("ZDH_HA_INFO插入数据时出现错误", ex.getCause)
+        throw ex
+      }
+    }
   }
 
   def insertZdhDownloadInfo(file_name:String,etl_date:Timestamp,owner:String,job_context:String): Unit ={

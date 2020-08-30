@@ -183,7 +183,10 @@ dependencies {
     // https://mvnrepository.com/artifact/com.datastax.spark/spark-cassandra-connector
     compile group: 'com.datastax.spark', name: 'spark-cassandra-connector_2.11', version: '2.4.3'
 
-    compile group: 'com.springml', name: 'spark-sftp_2.11', version: '1.1.4'
+    //compile group: 'com.springml', name: 'spark-sftp_2.11', version: '1.1.4'
+    // https://mvnrepository.com/artifact/com.springml/sftp.client
+    compile group: 'com.springml', name: 'sftp.client', version: '1.0.3'
+
 
     compile group: 'org.apache.kudu', name: 'kudu-spark2_2.11', version: '1.11.1'
 
@@ -207,11 +210,17 @@ dependencies {
     // https://mvnrepository.com/artifact/org.kie/kie-api
     compile group: 'org.kie', name: 'kie-api', version: '7.40.0.Final'
     // https://mvnrepository.com/artifact/org.drools/drools-compiler
-    compile group: 'org.drools', name: 'drools-compiler', version: '7.40.0.Final'
+    compile (group: 'org.drools', name: 'drools-compiler', version: '7.40.0.Final'){
+        exclude (module: 'protobuf-java')
+    }
     // https://mvnrepository.com/artifact/org.drools/drools-core
     compile group: 'org.drools', name: 'drools-core', version: '7.40.0.Final'
 
+    compile group: 'com.github.shyiko', name: 'mysql-binlog-connector-java', version: '0.21.0'
 
+    // https://mvnrepository.com/artifact/com.pivotal/greenplum-jdbc
+    compile files('libs/greenplum-jdbc-5.1.4.jar')
+    compile files('libs/spark-greenplum-1.0-SNAPSHOT.jar')
 
 
 }

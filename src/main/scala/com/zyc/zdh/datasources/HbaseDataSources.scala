@@ -196,7 +196,7 @@ object HbaseDataSources extends ZdhDataSources {
 
       println("=================" + columns.mkString(","))
       //列族
-      val cfs = columns.map(f => {
+      val cfs = columns.filter(!_.equalsIgnoreCase("row_key")).map(f => {
         if (f.contains(":")) {
           f.split(":")(0)
         } else {
@@ -341,6 +341,20 @@ object HbaseDataSources extends ZdhDataSources {
         if (admin.isTableDisabled(table)) {
           admin.enableTable(table)
         }
+      }else{
+        logger.info("[数据采集]:[HBASE]:检查表已存在,检查 列族:" + cfs.mkString(","))
+         val tableDescriptor = conn.getTable(table).getTableDescriptor
+         var is_update=false
+         cfs.foreach(cf=>if(tableDescriptor.getFamily(Bytes.toBytes(cf))==null) {
+           tableDescriptor.addFamily(new HColumnDescriptor(cf))
+           is_update=true
+         })
+        if(is_update){
+          logger.info("[数据采集]:[HBASE]:检查到有新增的列族:" + tableDescriptor.getColumnFamilies.map(cf=>Bytes.toString(cf.getName)).mkString(","))
+          admin.modifyTable(table, tableDescriptor)
+          admin.enableTable(table)
+        }
+
       }
     } catch {
       case ex: Exception => {

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.spark.sql.hive_jdbc.datasources.hive
+package org.apache.spark.sql.execution.datasources.clickhouse
 
 import java.sql.{Connection, Driver, DriverPropertyInfo, SQLFeatureNotSupportedException}
 import java.util.Properties

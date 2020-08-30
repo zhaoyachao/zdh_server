@@ -1,4 +1,4 @@
-package org.apache.spark.sql.hive_jdbc.datasources.hive
+package org.apache.spark.sql.execution.datasources.clickhouse
 
 import java.sql.{Connection, Driver, DriverManager, JDBCType, PreparedStatement, ResultSet, ResultSetMetaData, SQLException}
 import java.util.Locale
@@ -26,13 +26,13 @@ import org.apache.spark.util.NextIterator
 /**
   * Util functions for JDBC tables.
   */
-object HiveUtils extends Logging {
+object ClickHouseUtils extends Logging {
   /**
     * Returns a factory for creating connections to the given JDBC URL.
     *
     * @param options - JDBC options that contains url, table and other information.
     */
-  def createConnectionFactory(options: HiveOptions): () => Connection = {
+  def createConnectionFactory(options: ClickHouseOptions): () => Connection = {
     val driverClass: String = options.driverClass
     () => {
       DriverRegistry.register(driverClass)
@@ -50,7 +50,7 @@ object HiveUtils extends Logging {
   /**
     * Returns true if the table already exists in the JDBC database.
     */
-  def tableExists(conn: Connection, options: HiveOptionsInWrite): Boolean = {
+  def tableExists(conn: Connection, options: ClickHouseOptionsInWrite): Boolean = {
    // val dialect = JdbcDialects.get(options.url)
 
     // Somewhat hacky, but there isn't a good way to identify whether a table exists for all
@@ -72,7 +72,7 @@ object HiveUtils extends Logging {
   /**
     * Drops a table from the JDBC database.
     */
-  def dropTable(conn: Connection, table: String, options: HiveOptions): Unit = {
+  def dropTable(conn: Connection, table: String, options: ClickHouseOptions): Unit = {
     val statement = conn.createStatement
     try {
       statement.setQueryTimeout(options.queryTimeout)
@@ -85,7 +85,7 @@ object HiveUtils extends Logging {
   /**
     * Truncates a table from the JDBC database without side effects.
     */
-  def truncateTable(conn: Connection, options: HiveOptionsInWrite): Unit = {
+  def truncateTable(conn: Connection, options: ClickHouseOptionsInWrite): Unit = {
     val dialect = JdbcDialects.get(options.url)
     val statement = conn.createStatement
     try {
@@ -241,7 +241,7 @@ object HiveUtils extends Logging {
   /**
     * Returns the schema if the table already exists in the JDBC database.
     */
-  def getSchemaOption(conn: Connection, options: HiveOptions): Option[StructType] = {
+  def getSchemaOption(conn: Connection, options: ClickHouseOptions): Option[StructType] = {
     val dialect = JdbcDialects.get(options.url)
 
     try {
@@ -278,16 +278,16 @@ object HiveUtils extends Logging {
       val columnName = rsmd.getColumnLabel(i + 1)
       val dataType = rsmd.getColumnType(i + 1)
       val typeName = rsmd.getColumnTypeName(i + 1)
-      val fieldSize = rsmd.getPrecision(i + 1)
-      val fieldScale = rsmd.getScale(i + 1)
+      val fieldSize = i+1//rsmd.getPrecision(i + 1)
+      val fieldScale = i+1//rsmd.getScale(i + 1)
       val isSigned = {
         try {
-          rsmd.isSigned(i + 1)
+          rsmd.isSigned(i)
         } catch {
           // Workaround for HIVE-14684:
           case e: SQLException if
           e.getMessage == "Method not supported" &&
-            rsmd.getClass.getName == "org.apache.hive.jdbc.HiveResultSetMetaData" => true
+            rsmd.getClass.getName == "com.github.housepower.jdbc.ClickHouseDriver" => true
         }
       }
       val nullable = if (alwaysNullable) {
@@ -591,7 +591,7 @@ object HiveUtils extends Logging {
                      batchSize: Int,
                      dialect: JdbcDialect,
                      isolationLevel: Int,
-                     options: HiveOptions): Iterator[Byte] = {
+                     options: ClickHouseOptions): Iterator[Byte] = {
     val conn = getConnection()
     var committed = false
 
@@ -802,10 +802,10 @@ object HiveUtils extends Logging {
                  df: DataFrame,
                  tableSchema: Option[StructType],
                  isCaseSensitive: Boolean,
-                 options: HiveOptionsInWrite): Unit = {
+                 options: ClickHouseOptionsInWrite): Unit = {
     val url = options.url
     val table = options.table
-    val dialect = HiveDialect
+    val dialect = ClickHouseDialect
     val rddSchema = df.schema
     val getConnection: () => Connection = createConnectionFactory(options)
     val batchSize = options.batchSize
@@ -814,7 +814,7 @@ object HiveUtils extends Logging {
     val insertStmt = getInsertStatement(table, rddSchema, tableSchema, isCaseSensitive, dialect)
     val repartitionedDF = options.numPartitions match {
       case Some(n) if n <= 0 => throw new IllegalArgumentException(
-        s"Invalid value `$n` for parameter `${HiveOptions.JDBC_NUM_PARTITIONS}` in table writing " +
+        s"Invalid value `$n` for parameter `${ClickHouseOptions.JDBC_NUM_PARTITIONS}` in table writing " +
           "via JDBC. The minimum value is 1.")
       case Some(n) if n < df.rdd.getNumPartitions => df.coalesce(n)
       case _ => df
@@ -831,7 +831,7 @@ object HiveUtils extends Logging {
   def createTable(
                    conn: Connection,
                    df: DataFrame,
-                   options: HiveOptionsInWrite): Unit = {
+                   options: ClickHouseOptionsInWrite): Unit = {
     val strSchema = schemaString(
       df, options.url, options.createTableColumnTypes)
     val table = options.table
