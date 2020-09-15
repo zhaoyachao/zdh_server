@@ -6,6 +6,12 @@
    + kafka 1.x,2.x
    + scala 2.11.12
    + java 1.8
+
+# 提示
+   
+    zdh 分2部分,前端配置+后端数据ETL处理,此部分只包含ETL处理
+    前端配置项目 请参见项目 https://github.com/zhaoyachao/zdh_web
+    zdh_web 和zdh_server 保持同步 大版本会同步兼容 如果zdh_web 选择版本1.0 ,zdh_server 使用1.x 都可兼容
    
 # 项目介绍
 
