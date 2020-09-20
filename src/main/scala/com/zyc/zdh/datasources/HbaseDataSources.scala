@@ -25,6 +25,7 @@ import scala.collection.mutable
 object HbaseDataSources extends ZdhDataSources {
 
   val logger = LoggerFactory.getLogger(this.getClass)
+  val defFamily="cf1"
 
   /**
     *
@@ -195,12 +196,13 @@ object HbaseDataSources extends ZdhDataSources {
       }
 
       println("=================" + columns.mkString(","))
+      val defalutFamily = getDefaultFamily(Htable,conn)
       //列族
       val cfs = columns.filter(!_.equalsIgnoreCase("row_key")).map(f => {
         if (f.contains(":")) {
           f.split(":")(0)
         } else {
-          "cf1"
+          defalutFamily
         }
       }).toSet[String]
 
@@ -220,7 +222,7 @@ object HbaseDataSources extends ZdhDataSources {
               //println(row.getAs(f).getClass.getName)
               val value = row.getAs(f).toString
               if (!value.equals(""))
-                put.addColumn(Bytes.toBytes("cf1"), Bytes.toBytes(f), Bytes.toBytes(value))
+                put.addColumn(Bytes.toBytes(defalutFamily), Bytes.toBytes(f), Bytes.toBytes(value))
             }
           }
         })
@@ -320,6 +322,22 @@ object HbaseDataSources extends ZdhDataSources {
     conn
   }
 
+  def getDefaultFamily(table: TableName, conn: Connection)(implicit dispatch_task_id: String): String = {
+    val admin: Admin = conn.getAdmin
+    try {
+      if (admin.tableExists(table)) {
+        val cf = conn.getTable(table).getTableDescriptor.getColumnFamilies.map(cf => Bytes.toString(cf.getName)).head
+        if (cf != null && cf.isEmpty) return cf
+      }
+      return defFamily
+    } catch {
+      case ex: Exception => throw ex
+    } finally {
+      admin.close()
+    }
+
+  }
+
   def createHbaseTable(table: TableName, cfs: Set[String], conn: Connection)(implicit dispatch_task_id: String): Unit = {
     var admin: Admin = null
     try {
@@ -334,23 +352,23 @@ object HbaseDataSources extends ZdhDataSources {
             htd.addFamily(new HColumnDescriptor(cf))
           })
         } else {
-          htd.addFamily(new HColumnDescriptor("cf1"))
+          htd.addFamily(new HColumnDescriptor(defFamily))
         }
         //创建表
         admin.createTable(htd)
         if (admin.isTableDisabled(table)) {
           admin.enableTable(table)
         }
-      }else{
+      } else {
         logger.info("[数据采集]:[HBASE]:检查表已存在,检查 列族:" + cfs.mkString(","))
-         val tableDescriptor = conn.getTable(table).getTableDescriptor
-         var is_update=false
-         cfs.foreach(cf=>if(tableDescriptor.getFamily(Bytes.toBytes(cf))==null) {
-           tableDescriptor.addFamily(new HColumnDescriptor(cf))
-           is_update=true
-         })
-        if(is_update){
-          logger.info("[数据采集]:[HBASE]:检查到有新增的列族:" + tableDescriptor.getColumnFamilies.map(cf=>Bytes.toString(cf.getName)).mkString(","))
+        val tableDescriptor = conn.getTable(table).getTableDescriptor
+        var is_update = false
+        cfs.foreach(cf => if (tableDescriptor.getFamily(Bytes.toBytes(cf)) == null) {
+          tableDescriptor.addFamily(new HColumnDescriptor(cf))
+          is_update = true
+        })
+        if (is_update) {
+          logger.info("[数据采集]:[HBASE]:检查到有新增的列族:" + tableDescriptor.getColumnFamilies.map(cf => Bytes.toString(cf.getName)).mkString(","))
           admin.modifyTable(table, tableDescriptor)
           admin.enableTable(table)
         }
@@ -404,12 +422,12 @@ object HbaseDataSources extends ZdhDataSources {
       logger.info("[数据采集]:[HBASE]:[WRITE]:表名:" + "[ERROR]:输出的例必须包含row_key")
       return
     }
-
+    val defalutFamily = getDefaultFamily(Htable,conn)
     val cfs = columns.map(f => {
       if (f.contains(":")) {
         f.split(":")(0)
       } else {
-        "cf1"
+        defalutFamily
       }
     }).toSet[String]
 
@@ -422,7 +440,7 @@ object HbaseDataSources extends ZdhDataSources {
       val d = columns.map(c => {
         val map_f = c match {
           case a if a.contains(":") => Map(c -> f.getAs(c).toString)
-          case _ => Map("cf1:" + c -> f.getAs(c).toString)
+          case _ => Map(defalutFamily+":" + c -> f.getAs(c).toString)
         }
         map_f
       }

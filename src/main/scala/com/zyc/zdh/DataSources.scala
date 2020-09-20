@@ -2,7 +2,6 @@ package com.zyc.zdh
 
 import java.sql.Timestamp
 import java.util
-import java.util.regex.Pattern
 
 import com.zyc.base.util.{DateUtil, JsonUtil}
 import com.zyc.common.MariadbCommon
@@ -40,6 +39,8 @@ object DataSources {
     val owner = dispatchOption.getOrElse("owner", "001").toString
     val job_context = dispatchOption.getOrElse("job_context", "001").toString
     MDC.put("job_id", dispatch_task_id)
+    MDC.put("task_logs_id",task_logs_id)
+
     MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "23")
     val spark_tmp=spark.newSession()
     spark_tmp.sparkContext.setJobGroup(job_context,etlTaskInfo.getOrElse("etl_context",etlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
@@ -54,8 +55,6 @@ object DataSources {
       val outputOptions_tmp=outputOptions.asInstanceOf[Map[String,String]].+("fileType"->fileType,"encoding"->encoding,"sep"->sep,"header"->header)
 
       val df = inPutHandler(spark_tmp, task_logs_id, dispatchOption, etlTaskInfo, inPut, inputOptions, inputCondition, inputCols, outPut, outputOptions_tmp, outputCols, sql)
-
-
 
 
       if (!inPut.toString.toLowerCase.equals("kafka") && !inPut.toString.toLowerCase.equals("flume")) {
@@ -81,6 +80,7 @@ object DataSources {
       }
     } finally {
       MDC.remove("job_id")
+      MDC.remove("task_logs_id")
       SparkSession.clearActiveSession()
     }
 
@@ -98,6 +98,7 @@ object DataSources {
       case a=>a.split(",")
     }
     MDC.put("job_id", dispatch_task_id)
+    MDC.put("task_logs_id",task_logs_id)
     MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "23")
     val spark_tmp=spark.newSession()
     val tables = new util.ArrayList[String]();
@@ -188,7 +189,6 @@ object DataSources {
         MariadbCommon.updateTaskStatus2(task_logs_id,dispatch_task_id,dispatchOption,etl_date)
       }
     } finally {
-      MDC.remove("job_id")
       tables.toArray().foreach(table => {
         if (spark.catalog.tableExists(table.toString)) {
           logger.info("[数据采集]:[多源]:任务完成清空临时表:" + table.toString)
@@ -198,7 +198,8 @@ object DataSources {
           spark.catalog.dropTempView(table.toString)
         }
       })
-
+      MDC.remove("job_id")
+      MDC.remove("task_logs_id")
       SparkSession.clearActiveSession()
     }
 
@@ -213,6 +214,7 @@ object DataSources {
     val owner = dispatchOption.getOrElse("owner", "001").toString
     val job_context = dispatchOption.getOrElse("job_context", "001").toString
     MDC.put("job_id", dispatch_task_id)
+    MDC.put("task_logs_id",task_logs_id)
     MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "23")
     val spark_tmp=spark.newSession()
     spark_tmp.sparkContext.setJobGroup(job_context,sqlTaskInfo.getOrElse("sql_context",sqlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
@@ -259,6 +261,7 @@ object DataSources {
       }
     } finally {
       MDC.remove("job_id")
+      MDC.remove("task_logs_id")
       SparkSession.clearActiveSession()
     }
 
@@ -279,6 +282,7 @@ object DataSources {
     val job_context = dispatchOption.getOrElse("job_context", "001").toString
 
     MDC.put("job_id", dispatch_task_id)
+    MDC.put("task_logs_id",task_logs_id)
     MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "23")
     val spark_tmp=spark.newSession()
     import spark_tmp.implicits._
@@ -409,6 +413,7 @@ object DataSources {
       }
     } finally {
       MDC.remove("job_id")
+      MDC.remove("task_logs_id")
       SparkSession.clearActiveSession()
     }
 
@@ -427,6 +432,7 @@ object DataSources {
       case a=>a.split(",")
     }
     MDC.put("job_id", dispatch_task_id)
+    MDC.put("task_logs_id",task_logs_id)
     val spark_tmp=spark.newSession()
     val tables = new util.ArrayList[String]();
     try {
@@ -510,6 +516,8 @@ object DataSources {
         }
       })
 
+      MDC.remove("job_id")
+      MDC.remove("task_logs_id")
       SparkSession.clearActiveSession()
     }
 
@@ -524,6 +532,7 @@ object DataSources {
     val owner = dispatchOption.getOrElse("owner", "001").toString
     val job_context = dispatchOption.getOrElse("job_context", "001").toString
     MDC.put("job_id", dispatch_task_id)
+    MDC.put("task_logs_id",task_logs_id)
     val spark_tmp=spark.newSession()
     spark_tmp.sparkContext.setJobGroup(job_context,sqlTaskInfo.getOrElse("sql_context",sqlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
     try {
@@ -552,6 +561,9 @@ object DataSources {
       }
     } finally {
 
+      MDC.remove("job_id")
+      MDC.remove("task_logs_id")
+      SparkSession.clearActiveSession()
     }
 
 

@@ -5,16 +5,14 @@ import java.util.Date
 import java.util.concurrent.{LinkedBlockingQueue, ThreadPoolExecutor, TimeUnit}
 
 import com.zyc.base.util.JsonUtil
-import com.zyc.common.SparkBuilder
+import com.zyc.common.{MariadbCommon, SparkBuilder}
 import com.zyc.zdh.DataSources
 import com.zyc.zdh.datasources.{DataWareHouseSources, FlumeDataSources, KafKaDataSources}
 import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext, ChannelInboundHandlerAdapter}
 import io.netty.handler.codec.http._
 import io.netty.util.CharsetUtil
-import org.apache.commons.lang.StringEscapeUtils
 import org.apache.log4j.MDC
 import org.slf4j.LoggerFactory
-import org.apache.spark.sql.functions._
 
 
 class HttpServerHandler extends ChannelInboundHandlerAdapter with HttpBaseHandler {
@@ -32,6 +30,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter with HttpBaseHandle
 
   override def channelRead(ctx: ChannelHandlerContext, msg: scala.Any): Unit = {
     println("接收到netty 消息:时间" + new Date(System.currentTimeMillis()))
+
     val request = msg.asInstanceOf[FullHttpRequest]
     val keepAlive = HttpUtil.isKeepAlive(request)
     val response = diapathcer(request)
@@ -60,17 +59,19 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter with HttpBaseHandle
     * @return
     */
   def diapathcer(request: FullHttpRequest): HttpResponse = {
+    val uri = request.uri()
+    //数据采集请求
+    val param = getReqContent(request)
 
+    val dispatchOptions = param.getOrElse("quartzJobInfo", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
+    val dispatch_task_id = dispatchOptions.getOrElse("job_id", "001").toString
+    val task_logs_id=param.getOrElse("task_logs_id", "001").toString
+    val etl_date = JsonUtil.jsonToMap(dispatchOptions.getOrElse("params", "").toString).getOrElse("ETL_DATE", "").toString
     try {
-      val uri = request.uri()
-      //数据采集请求
-      val param = getReqContent(request)
-
-      val dispatchOptions = param.getOrElse("quartzJobInfo", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
-      val dispatch_task_id = dispatchOptions.getOrElse("job_id", "001").toString
       MDC.put("job_id", dispatch_task_id)
+      MDC.put("task_logs_id",task_logs_id)
       logger.info(s"接收到请求uri:$uri")
-
+      MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "22")
       logger.info(s"接收到请求uri:$uri,参数:${param.mkString(",").replaceAll("\"", "")}")
       if (uri.contains("/api/v1/zdh/more")) {
         moreEtl(param)
@@ -118,10 +119,12 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter with HttpBaseHandle
     } catch {
       case ex: Exception => {
         ex.printStackTrace()
+        MariadbCommon.updateTaskStatus2(task_logs_id,dispatch_task_id,dispatchOptions,etl_date)
         defaultResponse(noUri)
       }
     } finally {
       MDC.remove("job_id")
+      MDC.remove("task_logs_id")
     }
 
   }

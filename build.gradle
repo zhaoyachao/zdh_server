@@ -191,10 +191,10 @@ dependencies {
     compile group: 'org.apache.kudu', name: 'kudu-spark2_2.11', version: '1.11.1'
 
     // https://mvnrepository.com/artifact/org.apache.spark/spark-streaming-flume
-    compile group: 'org.apache.spark', name: 'spark-streaming-flume_2.11', version: '2.4.4'
+    compile group: 'org.apache.spark', name: 'spark-streaming-flume_2.11', version: "$sparkVersion"
 
     // https://mvnrepository.com/artifact/org.apache.spark/spark-streaming-flume-sink
-    compile group: 'org.apache.spark', name: 'spark-streaming-flume-sink_2.11', version: '2.4.4'
+    compile group: 'org.apache.spark', name: 'spark-streaming-flume-sink_2.11', version: "$sparkVersion"
 
     // https://mvnrepository.com/artifact/com.lucidworks.spark/spark-solr
    // compile group: 'com.lucidworks.spark', name: 'spark-solr', version: '3.7.6'
@@ -221,6 +221,30 @@ dependencies {
     // https://mvnrepository.com/artifact/com.pivotal/greenplum-jdbc
     compile files('libs/greenplum-jdbc-5.1.4.jar')
     compile files('libs/spark-greenplum-1.0-SNAPSHOT.jar')
+    
+    compile group: 'com.memsql', name: 'memsql-spark-connector_2.11', version: '3.0.4-spark-2.4.4'
+
+    // https://mvnrepository.com/artifact/org.mariadb.jdbc/mariadb-java-client
+    compile group: 'org.mariadb.jdbc', name: 'mariadb-java-client', version: '2.6.2'
+
+    // https://mvnrepository.com/artifact/com.facebook.presto/presto-jdbc
+    compile group: 'com.facebook.presto', name: 'presto-jdbc', version: '0.240'
+
+    // https://mvnrepository.com/artifact/com.amazon.redshift/redshift-jdbc42
+    compile files('libs/redshift-jdbc42-1.2.43.1067.jar')
+
+    // https://mvnrepository.com/artifact/org.postgresql/postgresql
+    compile group: 'org.postgresql', name: 'postgresql', version: '42.2.16'
+
+    // https://mvnrepository.com/artifact/org.apache.kylin/kylin-jdbc
+    compile group: 'org.apache.kylin', name: 'kylin-jdbc', version: '3.0.2'
+
+    compile files('libs/terajdbc4.jar')
+    compile files('libs/tdgssconfig.jar')
+
+    compile files('libs/kingbasejdbc3.jar')
+
+    compile files('libs/gbase-connector-java-8.3.81.53-build52.8-bin.jar')
 
 
 }

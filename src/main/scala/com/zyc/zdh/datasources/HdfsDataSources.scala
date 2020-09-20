@@ -1,10 +1,14 @@
 package com.zyc.zdh.datasources
 
 import com.zyc.zdh.ZdhDataSources
+import com.zyc.zdh.entity.QuartzJobInfo
+import org.apache.hadoop.hdfs.server.namenode.ha.proto.HAZKInfoProtos
 import org.apache.hudi.DataSourceWriteOptions
 import org.apache.hudi.config.HoodieWriteConfig
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{Column, DataFrame, SaveMode, SparkSession}
+import org.apache.zookeeper.ZooKeeper
+import org.apache.zookeeper.data.Stat
 import org.slf4j.LoggerFactory
 
 object HdfsDataSources extends ZdhDataSources {
@@ -40,10 +44,18 @@ object HdfsDataSources extends ZdhDataSources {
 
     val sep = inputOptions.getOrElse("sep", ",").toString
 
-    val hdfs = inputOptions.getOrElse("url", "")
+    var hdfs = inputOptions.getOrElse("url", "")
 
     if (hdfs.contains(",")) {
-      throw new Exception("[zdh],hdfs数据源读取:数据源连接串中包含特殊字符,或者不支持多个ip")
+      logger.info("[zdh],hdfs数据源读取:检测多个为zk连接,连接zk")
+      val cluster = hdfs.split("/").last
+      val zk_url=hdfs.split("/")(0)
+      val zk=new ZooKeeper(zk_url,10000,null)
+      val hadoop_ha=s"/hadoop-ha/${cluster}/ActiveStandbyElectorLock"
+      val bytes=zk.getData(hadoop_ha,true,new Stat())
+      val info=HAZKInfoProtos.ActiveNodeInfo.parseFrom(bytes)
+      hdfs=s"hdfs://${info.getHostname}:${info.getPort}"
+      logger.info(s"[zdh],hdfs数据源读取:连接zk获取hdfs地址为:${hdfs}")
     }
 
     logger.info("[数据采集]:输入源为[HDFS],匹配对应参数完成")
