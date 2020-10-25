@@ -43,7 +43,7 @@ object DataSources {
 
     MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "23")
     val spark_tmp=spark.newSession()
-    spark_tmp.sparkContext.setJobGroup(job_context,etlTaskInfo.getOrElse("etl_context",etlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
+    spark_tmp.sparkContext.setJobGroup(task_logs_id+"_"+job_context,etlTaskInfo.getOrElse("etl_context",etlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
     try {
       logger.info("[数据采集]:数据采集开始")
       logger.info("[数据采集]:数据采集日期:" + etl_date)
@@ -53,15 +53,18 @@ object DataSources {
       val sep=etlTaskInfo.getOrElse("sep_output",",").toString
       val primary_columns = etlTaskInfo.getOrElse("primary_columns", "").toString
       val outputOptions_tmp=outputOptions.asInstanceOf[Map[String,String]].+("fileType"->fileType,"encoding"->encoding,"sep"->sep,"header"->header)
+      //判断是否有spark conf 参数 spark. 开头的都是conf 配置
+      inputOptions.filter(p=>p._1.startsWith("spark.")).asInstanceOf[Map[String,String]].foreach(p=>spark_tmp.conf.set(p._1,p._2))
 
       val df = inPutHandler(spark_tmp, task_logs_id, dispatchOption, etlTaskInfo, inPut, inputOptions, inputCondition, inputCols, outPut, outputOptions_tmp, outputCols, sql)
 
-
       if (!inPut.toString.toLowerCase.equals("kafka") && !inPut.toString.toLowerCase.equals("flume")) {
+        //判断是否有spark conf 参数 spark. 开头的都是conf 配置
+        outputOptions_tmp.filter(p=>p._1.startsWith("spark.")).foreach(p=>spark_tmp.conf.set(p._1,p._2))
         outPutHandler(spark_tmp, df, outPut, outputOptions_tmp, outputCols, sql)
         MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "finish", etl_date, "100")
       } else {
-        logger.info("[数据采集]:数据采集检测是实时采集,输出数据源为jdbc")
+        logger.info("[数据采集]:数据采集检测是实时采集,程序将常驻运行")
       }
       if (outPut.trim.toLowerCase.equals("外部下载")) {
         //获取路径信息
@@ -86,6 +89,18 @@ object DataSources {
 
   }
 
+  /**
+    * 多源任务入口
+    * @param spark
+    * @param task_logs_id
+    * @param dispatchOption
+    * @param dsi_EtlInfo
+    * @param etlMoreTaskInfo
+    * @param outPut
+    * @param outputOptions
+    * @param outputCols
+    * @param sql
+    */
   def DataHandlerMore(spark: SparkSession, task_logs_id: String, dispatchOption: Map[String, Any], dsi_EtlInfo: List[Map[String, Map[String, Any]]],
                       etlMoreTaskInfo: Map[String, Any], outPut: String, outputOptions: Map[String, Any], outputCols: Array[Map[String, String]], sql: String): Unit = {
 
@@ -122,7 +137,7 @@ object DataSources {
         val inPut = dsi_Input.getOrElse("data_source_type", "").toString
         val etlTaskInfo = f.getOrElse("etlTaskInfo", Map.empty[String, Any])
 
-        spark_tmp.sparkContext.setJobGroup(job_context,etlTaskInfo.getOrElse("etl_context",etlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
+        spark_tmp.sparkContext.setJobGroup(task_logs_id+"_"+job_context,etlTaskInfo.getOrElse("etl_context",etlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
         //参数
         val inputOptions: Map[String, Any] = etlTaskInfo.getOrElse("data_sources_params_input", "").toString.trim match {
           case "" => Map.empty[String, Any]
@@ -167,7 +182,8 @@ object DataSources {
       val header=etlMoreTaskInfo.getOrElse("header_output","false").toString
       val sep=etlMoreTaskInfo.getOrElse("sep_output",",").toString
       val outputOptions_tmp=outputOptions.asInstanceOf[Map[String,String]].+("fileType"->fileType,"encoding"->encoding,"sep"->sep,"header"->header)
-
+      //判断是否有spark conf 参数 spark. 开头的都是conf 配置
+      outputOptions_tmp.filter(p=>p._1.startsWith("spark.")).foreach(p=>spark_tmp.conf.set(p._1,p._2))
       //写入数据源
       outPutHandler(spark_tmp, result, outPut, outputOptions_tmp, null, sql)
       MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "finish", etl_date, "100")
@@ -206,6 +222,19 @@ object DataSources {
 
   }
 
+  /**
+    * sql任务入口
+    * @param spark
+    * @param task_logs_id
+    * @param dispatchOption
+    * @param sqlTaskInfo
+    * @param inPut
+    * @param inputOptions
+    * @param outPut
+    * @param outputOptions
+    * @param outputCols
+    * @param sql
+    */
   def DataHandlerSql(spark: SparkSession, task_logs_id: String, dispatchOption: Map[String, Any], sqlTaskInfo: Map[String, Any], inPut: String, inputOptions: Map[String, Any],
                      outPut: String, outputOptions: Map[String, Any], outputCols: Array[Map[String, String]], sql: String): Unit ={
 
@@ -217,7 +246,7 @@ object DataSources {
     MDC.put("task_logs_id",task_logs_id)
     MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "23")
     val spark_tmp=spark.newSession()
-    spark_tmp.sparkContext.setJobGroup(job_context,sqlTaskInfo.getOrElse("sql_context",sqlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
+    spark_tmp.sparkContext.setJobGroup(task_logs_id+"_"+job_context,sqlTaskInfo.getOrElse("sql_context",sqlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
     try {
       logger.info("[数据采集]:[SQL]:数据采集开始")
       logger.info("[数据采集]:[SQL]:数据采集日期:" + etl_date)
@@ -240,6 +269,8 @@ object DataSources {
       val sep=sqlTaskInfo.getOrElse("sep_output",",").toString
       val outputOptions_tmp=outputOptions.asInstanceOf[Map[String,String]].+("fileType"->fileType,"encoding"->encoding,"sep"->sep,"header"->header)
 
+      //判断是否有spark conf 参数 spark. 开头的都是conf 配置
+      outputOptions_tmp.filter(p=>p._1.startsWith("spark.")).foreach(p=>spark_tmp.conf.set(p._1,p._2))
 
       outPutHandler(spark_tmp,df,outPut,outputOptions_tmp,outputCols,sql)
 
@@ -272,6 +303,20 @@ object DataSources {
   }
 
 
+  /**
+    * drools 任务入口
+    * @param spark
+    * @param task_logs_id
+    * @param dispatchOption
+    * @param dsi_EtlInfo
+    * @param etlDroolsTaskInfo
+    * @param etlMoreTaskInfo
+    * @param sqlTaskInfo
+    * @param outPut
+    * @param outputOptions
+    * @param outputCols
+    * @param sql
+    */
   def DataHandlerDrools(spark: SparkSession, task_logs_id: String, dispatchOption: Map[String, Any], dsi_EtlInfo: List[Map[String, Map[String, Any]]],
                       etlDroolsTaskInfo: Map[String, Any],etlMoreTaskInfo: Map[String, Any] ,sqlTaskInfo: Map[String, Any],outPut: String,
                         outputOptions: Map[String, Any], outputCols: Array[Map[String, String]], sql: String): Unit = {
@@ -309,7 +354,7 @@ object DataSources {
         val inPut = dsi_Input.getOrElse("data_source_type", "").toString
         val etlTaskInfo = dsi_EtlInfo(0).getOrElse("etlTaskInfo", Map.empty[String, Any])
 
-        spark_tmp.sparkContext.setJobGroup(job_context,etlTaskInfo.getOrElse("etl_context",etlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
+        spark_tmp.sparkContext.setJobGroup(task_logs_id+"_"+job_context,etlTaskInfo.getOrElse("etl_context",etlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
         //参数
         val inputOptions: Map[String, Any] = etlTaskInfo.getOrElse("data_sources_params_input", "").toString.trim match {
           case "" => Map.empty[String, Any]
@@ -391,6 +436,8 @@ object DataSources {
       val sep=etlDroolsTaskInfo.getOrElse("sep_output",",").toString
       val outputOptions_tmp=outputOptions.asInstanceOf[Map[String,String]].+("fileType"->fileType,"encoding"->encoding,"sep"->sep,"header"->header)
 
+      //判断是否有spark conf 参数 spark. 开头的都是conf 配置
+      outputOptions_tmp.filter(p=>p._1.startsWith("spark.")).foreach(p=>spark_tmp.conf.set(p._1,p._2))
       //写入数据源
       outPutHandler(spark_tmp, result, outPut, outputOptions_tmp, null, sql)
       MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "finish", etl_date, "100")
@@ -421,6 +468,17 @@ object DataSources {
   }
 
 
+  /**
+    * drools 任务调用多源任务处理
+    * @param spark
+    * @param task_logs_id
+    * @param dispatchOption
+    * @param dsi_EtlInfo
+    * @param etlMoreTaskInfo
+    * @param sql
+    * @param dispatch_task_id
+    * @return
+    */
   def DataHandlerMore2(spark: SparkSession, task_logs_id: String, dispatchOption: Map[String, Any], dsi_EtlInfo: List[Map[String, Map[String, Any]]],
                       etlMoreTaskInfo: Map[String, Any], sql: String)(implicit dispatch_task_id:String): DataFrame = {
 
@@ -455,7 +513,7 @@ object DataSources {
         val inPut = dsi_Input.getOrElse("data_source_type", "").toString
         val etlTaskInfo = f.getOrElse("etlTaskInfo", Map.empty[String, Any])
 
-        spark_tmp.sparkContext.setJobGroup(job_context,etlTaskInfo.getOrElse("etl_context",etlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
+        spark_tmp.sparkContext.setJobGroup(task_logs_id+"_"+job_context,etlTaskInfo.getOrElse("etl_context",etlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
         //参数
         val inputOptions: Map[String, Any] = etlTaskInfo.getOrElse("data_sources_params_input", "").toString.trim match {
           case "" => Map.empty[String, Any]
@@ -525,6 +583,18 @@ object DataSources {
   }
 
 
+  /**
+    * drools 任务调用sql任务处理
+    * @param spark
+    * @param task_logs_id
+    * @param dispatchOption
+    * @param sqlTaskInfo
+    * @param inPut
+    * @param inputOptions
+    * @param sql
+    * @param dispatch_task_id
+    * @return
+    */
   def DataHandlerSql2(spark: SparkSession, task_logs_id: String, dispatchOption: Map[String, Any], sqlTaskInfo: Map[String, Any], inPut: String, inputOptions: Map[String, Any],
                       sql: String)(implicit  dispatch_task_id:String): DataFrame ={
 
@@ -534,7 +604,7 @@ object DataSources {
     MDC.put("job_id", dispatch_task_id)
     MDC.put("task_logs_id",task_logs_id)
     val spark_tmp=spark.newSession()
-    spark_tmp.sparkContext.setJobGroup(job_context,sqlTaskInfo.getOrElse("sql_context",sqlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
+    spark_tmp.sparkContext.setJobGroup(task_logs_id+"_"+job_context,sqlTaskInfo.getOrElse("sql_context",sqlTaskInfo.getOrElse("id","").toString).toString+"_"+etl_date+"_"+task_logs_id)
     try {
       logger.info("[数据采集]:[SQL]:数据采集开始")
       logger.info("[数据采集]:[SQL]:数据采集日期:" + etl_date)

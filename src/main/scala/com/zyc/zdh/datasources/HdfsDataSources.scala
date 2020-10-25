@@ -1,7 +1,6 @@
 package com.zyc.zdh.datasources
 
 import com.zyc.zdh.ZdhDataSources
-import com.zyc.zdh.entity.QuartzJobInfo
 import org.apache.hadoop.hdfs.server.namenode.ha.proto.HAZKInfoProtos
 import org.apache.hudi.DataSourceWriteOptions
 import org.apache.hudi.config.HoodieWriteConfig

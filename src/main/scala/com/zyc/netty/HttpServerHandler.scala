@@ -63,7 +63,18 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter with HttpBaseHandle
     //数据采集请求
     val param = getReqContent(request)
 
-    val dispatchOptions = param.getOrElse("quartzJobInfo", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
+    if (uri.contains("/api/v1/kill")){
+      val task_logs_id=param.getOrElse("task_logs_id", "001").toString
+      val dispatch_task_id = param.getOrElse("job_id", "001").toString
+      MDC.put("job_id", dispatch_task_id)
+      MDC.put("task_logs_id",task_logs_id)
+      val r= kill(param)
+      MDC.remove("job_id")
+      MDC.remove("task_logs_id")
+      return r
+    }
+
+    val dispatchOptions = param.getOrElse("tli", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
     val dispatch_task_id = dispatchOptions.getOrElse("job_id", "001").toString
     val task_logs_id=param.getOrElse("task_logs_id", "001").toString
     val etl_date = JsonUtil.jsonToMap(dispatchOptions.getOrElse("params", "").toString).getOrElse("ETL_DATE", "").toString
@@ -149,6 +160,20 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter with HttpBaseHandle
     }
   }
 
+  private def kill(param: Map[String, Any]): DefaultFullHttpResponse={
+    val task_logs_id = param.getOrElse("task_logs_id", "001").toString
+    val jobGroups=param.getOrElse("jobGroups",List.empty[String]).asInstanceOf[List[String]]
+
+    val spark = SparkBuilder.getSparkSession()
+    logger.info(s"开始杀死任务:${jobGroups.mkString(",")}")
+    jobGroups.foreach(jobGroup=>{
+      spark.sparkContext.cancelJobGroup(jobGroup)
+      logger.info(s"杀死任务:$jobGroup")
+    })
+    logger.info(s"完成杀死任务:${jobGroups.mkString(",")}")
+
+    defaultResponse(cmdOk)
+  }
 
   private def moreEtl(param: Map[String, Any]): DefaultFullHttpResponse = {
 
@@ -165,7 +190,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter with HttpBaseHandle
     val etlMoreTaskInfo = param.getOrElse("etlMoreTaskInfo", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
 
     //调度任务信息
-    val dispatchOptions = param.getOrElse("quartzJobInfo", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
+    val dispatchOptions = param.getOrElse("tli", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
 
     //输出数据源类型
     val outPut = dsi_Output.getOrElse("data_source_type", "").toString
@@ -213,7 +238,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter with HttpBaseHandle
     //etl任务信息
     val sqlTaskInfo = param.getOrElse("sqlTaskInfo", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
     //调度任务信息
-    val dispatchOptions = param.getOrElse("quartzJobInfo", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
+    val dispatchOptions = param.getOrElse("tli", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
 
     //输入数据源类型
     val inPut = dsi_Input.getOrElse("data_source_type", "").toString
@@ -276,7 +301,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter with HttpBaseHandle
     //etl任务信息
     val etlTaskInfo = param.getOrElse("etlTaskInfo", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
     //调度任务信息
-    val dispatchOptions = param.getOrElse("quartzJobInfo", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
+    val dispatchOptions = param.getOrElse("tli", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
 
     //输入数据源类型
     val inPut = dsi_Input.getOrElse("data_source_type", "").toString
@@ -356,7 +381,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter with HttpBaseHandle
     val sqlTaskInfo = param.getOrElse("sqlTaskInfo", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
 
     //调度任务信息
-    val dispatchOptions = param.getOrElse("quartzJobInfo", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
+    val dispatchOptions = param.getOrElse("tli", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
 
     //输出数据源类型
     val outPut = dsi_Output.getOrElse("data_source_type", "").toString

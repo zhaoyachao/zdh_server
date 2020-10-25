@@ -327,9 +327,9 @@ object MariadbCommon {
       statement.close()
 
       logger.info(s"开始更新任务日志状态:${task_logs_id},状态:${last_status}")
-      var sql2 = s"update task_logs set status=? , process=? ,update_time= ? ,server_ack='1' where job_id=? and etl_date=? and id=?"
+      var sql2 = s"update task_log_instance set status=? , process=? ,update_time= ? ,server_ack='1' where job_id=? and etl_date=? and id=?"
       if(process==null || process.equals("")){
-        sql2 = s"update task_logs set status=? ,update_time= ? ,server_ack='1' where job_id=? and etl_date=? and id=?"
+        sql2 = s"update task_log_instance set status=? ,update_time= ? ,server_ack='1' where job_id=? and etl_date=? and id=?"
         val statement2 = connection.prepareStatement(sql2)
         statement2.setString(1, last_status)
         statement2.setTimestamp(2, new Timestamp(new Date().getTime))
@@ -393,7 +393,7 @@ object MariadbCommon {
       }
 
       if(status.equals("wait_retry")){
-        var sql3 = s"update task_logs set status=?,retry_time=?,update_time= ? where job_id=? and etl_date=? and id=?"
+        var sql3 = s"update task_log_instance set status=?,retry_time=?,update_time= ? where job_id=? and etl_date=? and id=?"
         val statement2 = connection.prepareStatement(sql3)
         statement2.setString(1, status)
         statement2.setTimestamp(2, retry_time)
