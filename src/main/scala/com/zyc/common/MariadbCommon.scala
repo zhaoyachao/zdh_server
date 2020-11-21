@@ -216,6 +216,40 @@ object MariadbCommon {
     }
   }
 
+  def updateZdhHaInfoUpdateTime(id:String): Unit ={
+    if (connection == null){
+      synchronized {
+        logger.info("数据库未初始化连接,尝试初始化连接")
+        if (connection == null) {
+          if(!getConnect())
+            throw new Exception("connection mariadb fail,could not get connection ")
+        }
+        logger.info("数据库完成初始化连接")
+      }
+    }
+
+    if (connection != null && !connection.isValid(5000)) {
+      logger.info("数据库连接失效,尝试重新连接")
+      connection.close()
+      if (!getConnect())
+        throw new Exception("connection mariadb fail,could not get connection ")
+      logger.info("数据库连接失效,重连成功")
+    }
+    try {
+      logger.info(s"开始更新zdh_ha_info")
+      val update_sql=s"update zdh_ha_info set update_time= '${DateUtil.getCurrentTime()}'"
+      val stat_update=connection.prepareStatement(update_sql)
+      stat_update.execute()
+      logger.info(s"更新zdh_ha_info")
+
+    } catch {
+      case ex: Exception => {
+        logger.error("ZDH_HA_INFO更新数据时出现错误", ex.getCause)
+        throw ex
+      }
+    }
+  }
+
   def getZdhHaInfo(): Seq[Map[String,String]] ={
     if (connection == null){
       synchronized {

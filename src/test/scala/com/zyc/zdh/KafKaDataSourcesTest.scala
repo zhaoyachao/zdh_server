@@ -14,7 +14,7 @@ class KafKaDataSourcesTest extends FunSuite with TEST_TRAIT2{
       "user"->"zyc",
       "password"->"123456")
     spark.sparkContext.setLogLevel("error")
-    KafKaDataSources.createKafkaDataSources(spark,"localhost:9092","topic1","g1",Map("msgType"->"csv"),Array("name","age"),null,outputOptions,"")("001")
+    KafKaDataSources.createKafkaDataSources(spark,"localhost:9092","topic1","g1",Map("msgType"->"csv"),Array("name","age"),"",null,outputOptions,"","")("001")
 
 
   while (true){

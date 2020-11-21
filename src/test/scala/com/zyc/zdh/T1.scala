@@ -5,16 +5,11 @@ import java.net.URI
 import java.util
 import java.util.Properties
 
-import com.zyc.base.util.DateUtil
-import com.zyc.drools.D1
 import net.sf.jsqlparser.expression.Expression
-import net.sf.jsqlparser.expression.operators.conditional.{AndExpression, OrExpression}
-import net.sf.jsqlparser.expression.operators.relational.{GreaterThan, GreaterThanEquals, MinorThan, MinorThanEquals}
 import net.sf.jsqlparser.parser.CCJSqlParserManager
 import net.sf.jsqlparser.statement.delete.Delete
-import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerRecord}
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.kie.api.KieServices
-import org.kie.internal.builder.{KnowledgeBuilder, KnowledgeBuilderFactory}
 import org.scalatest.FunSuite
 
 class T1 extends FunSuite {
@@ -133,11 +128,6 @@ class T1 extends FunSuite {
 
   test("kafka"){
 
-    import org.apache.kafka.clients.producer.ProducerConfig
-    import java.util.concurrent.ExecutorService
-    import java.util.concurrent.Executors
-    import java.util.concurrent.atomic.AtomicBoolean
-
     val prop = new Properties
     // 指定请求的kafka集群列表
     prop.put("bootstrap.servers", "127.0.0.1:9092")// 指定响应方式
@@ -171,8 +161,6 @@ class T1 extends FunSuite {
 
     if (stmt.isInstanceOf[Delete]) {
       val whereExpr: Expression = stmt.asInstanceOf[Delete].getWhere
-      import net.sf.jsqlparser.expression.ExpressionVisitorAdapter
-      import net.sf.jsqlparser.expression.operators.relational.EqualsTo
       println(whereExpr.toString)
       whereExpr.getASTNode
 //      whereExpr.accept(
@@ -263,7 +251,7 @@ class T1 extends FunSuite {
     val kieContainer = kieServices.newKieContainer(kieServices.getRepository().getDefaultReleaseId());
     val kieBase = kieContainer.getKieBase();
     val ksession = kieBase.newKieSession()
-    import  scala.collection.JavaConverters._
+    import scala.collection.JavaConverters._
 
     val map=Map("id"->"1")
    // var m2=map.asJava

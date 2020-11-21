@@ -96,6 +96,19 @@ class JdbcDataSourcesTest extends FunSuite with TEST_TRAIT2{
   }
 
 
+  test("testUpdateJDBC"){
+
+    val opt=Map(
+      "driver"->"com.mysql.cj.jdbc.Driver",
+      "url"->"jdbc:mysql://127.0.0.1:3306/mydb?serverTimezone=GMT%2B8",
+      "dbtable"->"task_log_instance",
+      "user"->"zyc",
+      "password"->"123456"
+    )
+    import spark.implicits._
+    JdbcDataSources.updateJDBC(spark,null,opt,"")("001")
+
+  }
 
 
 

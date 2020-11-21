@@ -54,6 +54,10 @@ object SystemInit {
         if(list.filter(map=> map.getOrElse("zdh_host","").equals(host) && map.getOrElse("zdh_port","").equals(port)).size<1){
           logger.debug("当前节点丢失,重新注册当前节点")
           MariadbCommon.insertZdhHaInfo(zdh_instance,host , port, uiWebUrl.split(":")(2),applicationId,spark_history_server,master)
+        }else{
+          logger.debug("当前节点存在,更新当前节点")
+          val id=list.filter(map=> map.getOrElse("zdh_host","").equals(host) && map.getOrElse("zdh_port","").equals(port))(0).getOrElse("id","-1")
+          MariadbCommon.updateZdhHaInfoUpdateTime(id)
         }
 
         Thread.sleep(time_interval*1000)
