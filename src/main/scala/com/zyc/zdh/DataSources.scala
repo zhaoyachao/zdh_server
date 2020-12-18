@@ -696,6 +696,7 @@ object DataSources {
       case "外部上传" => LocalDataSources
       case "flume" => FlumeDataSources
       case "外部下载" => throw new Exception("[数据采集]:[输入]:[外部下载]只能作为输出数据源:")
+      case "greenplum"=> GreenplumDataSources
       case _ => throw new Exception("数据源类型无法匹配")
     }
     var outputCols_expr: Array[Column] = null
@@ -879,7 +880,14 @@ object DataSources {
           KuduDataSources
         }
         case "外部上传" => throw new Exception("[数据采集]:[输出]:[外部上传]只能作为输入数据源:")
-        case "外部下载" => DownDataSources
+        case "外部下载" => {
+          logger.info("[数据采集]:[输出]:输出源为[外部下载]")
+          DownDataSources
+        }
+        case "greenplum" => {
+          logger.info("[数据采集]:[输出]:输出源为[Greenplum]")
+          GreenplumDataSources
+        }
         case x => throw new Exception("[数据采集]:[输出]:无法识别输出数据源:" + x)
       }
 

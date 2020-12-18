@@ -5,13 +5,12 @@ import java.util.Properties
 import com.zyc.zdh.ZdhDataSources
 import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.{Column, DataFrame, SaveMode, SparkSession}
-import org.apache.spark.sql.functions._
 import org.slf4j.LoggerFactory
 
 /**
   * 使用此数据源连接所有的jdbc数据,包括hive,mysql,oracle 等
   */
-object JdbcDataSources extends ZdhDataSources{
+object GreenplumDataSources extends ZdhDataSources{
 
   val logger=LoggerFactory.getLogger(this.getClass)
 
@@ -23,58 +22,75 @@ object JdbcDataSources extends ZdhDataSources{
     * @return
     */
   override def getSchema(spark: SparkSession, options: Map[String,String])(implicit dispatch_task_id:String): Array[StructField] = {
-    logger.info("[数据采集]:[JDBC]:[SCHEMA]:"+options.mkString(","))
-    spark.read.format("jdbc").options(options).load().schema.fields
+    logger.info("[数据采集]:[Greenplum]:[SCHEMA]:"+options.mkString(","))
+    var dbtable: String = options.getOrElse("dbtable", "").toString
+    val paths = options.getOrElse("paths", "").toString
+    if (paths.trim.equals("")) {
+      throw new Exception("[zdh],Greenplum数据源读取:paths为空")
+    }
+    var dbschema=""
+    if(paths.contains(".")){
+      dbtable=paths.split(".")(1)
+      dbschema=paths.split(".")(0)
+    }else{
+      dbtable=paths
+    }
+    var tmpOptions=options.+("dbtable"->dbtable,"dbschema"->dbschema)
+    spark.read.format("greenplum").options(tmpOptions).load().schema.fields
   }
 
 
   override def getDS(spark: SparkSession, dispatchOption: Map[String, Any], inPut: String, inputOptions: Map[String, String],
                      inputCondition: String, inputCols: Array[String],duplicateCols:Array[String], outPut: String, outputOptionions: Map[String, String],
                      outputCols: Array[Map[String, String]], sql: String)(implicit dispatch_task_id: String): DataFrame = {
+    var tmpOptions=inputOptions
     try{
-      logger.info("[数据采集]:输入源为[JDBC],开始匹配对应参数")
+      logger.info("[数据采集]:输入源为[Greenplum],开始匹配对应参数")
       val url: String = inputOptions.getOrElse("url", "").toString
       if(url.trim.equals("")){
-        throw new Exception("[zdh],jdbc数据源读取:url为空")
+        throw new Exception("[zdh],Greenplum数据源读取:url为空")
       }
-      val dbtable: String = inputOptions.getOrElse("dbtable", "").toString
-      if(dbtable.trim.equals("")){
-        throw new Exception("[zdh],jdbc数据源读取:dbtable为空")
+      var dbtable: String = inputOptions.getOrElse("dbtable", "").toString
+      val paths = inputOptions.getOrElse("paths", "").toString
+      if (paths.trim.equals("")) {
+        throw new Exception("[zdh],Greenplum数据源读取:paths为空")
       }
+      var dbschema=""
+      if(paths.contains(".")){
+        dbtable=paths.split(".")(1)
+        dbschema=paths.split(".")(0)
+      }else{
+        dbtable=paths
+      }
+
       val user: String = inputOptions.getOrElse("user", "").toString
       if(user.trim.equals("")){
-        logger.info("[zdh],jdbc数据源读取:user为空")
+        logger.info("[zdh],Greenplum数据源读取:user为空")
      //   throw new Exception("[zdh],jdbc数据源读取:user为空")
       }
       val password: String = inputOptions.getOrElse("password", "").toString
       if(password.trim.equals("")){
-        logger.info("[zdh],jdbc数据源读取:password为空")
+        logger.info("[zdh],Greenplum数据源读取:password为空")
       //  throw new Exception("[zdh],jdbc数据源读取:password为空")
       }
       val driver: String = inputOptions.getOrElse("driver", "").toString
       if(driver.trim.equals("")){
-        throw new Exception("[zdh],jdbc数据源读取:driver为空")
+        throw new Exception("[zdh],Greenplum数据源读取:driver为空")
       }
 
-      logger.info("[数据采集]:[JDBC]:[READ]:表名:"+inputOptions.getOrElse("dbtable","")+","+inputOptions.mkString(",")+" [FILTER]:"+inputCondition)
+      tmpOptions=inputOptions.+("dbtable"->dbtable,"dbschema"->dbschema)
+
+      logger.info("[数据采集]:[Greenplum]:[READ]:表名:"+tmpOptions.getOrElse("dbtable","")+","+tmpOptions.mkString(",")+" [FILTER]:"+inputCondition)
       //获取jdbc 配置
-      var format="jdbc"
-      if(inputOptions.getOrElse("url","").toLowerCase.contains("jdbc:hive2:")){
-        format="org.apache.spark.sql.execution.datasources.hive.HiveRelationProvider"
-        logger.info("[数据采集]:[JDBC]:[READ]:表名:"+inputOptions.getOrElse("dbtable","")+",使用自定义hive-jdbc数据源")
-      }
-      if(inputOptions.getOrElse("url","").toLowerCase.contains("jdbc:clickhouse:")){
-        format="org.apache.spark.sql.execution.datasources.clickhouse.ClickHouseRelationProvider"
-        logger.info("[数据采集]:[JDBC]:[READ]:表名:"+inputOptions.getOrElse("dbtable","")+",使用自定义clickhouse-jdbc数据源")
-      }
-
-      var df:DataFrame=spark.read.format(format).options(inputOptions).load()
+      //https://github.com/kongyew/greenplum-spark-connector/blob/master/usecase1/README.MD
+      var format="greenplum"
+      var df:DataFrame=spark.read.format(format).options(tmpOptions).load()
 
       filter(spark,df,inputCondition,duplicateCols)
 
     }catch {
       case ex:Exception=>{
-        logger.error("[数据采集]:[JDBC]:[READ]:表名:"+inputOptions.getOrElse("dbtable","")+"[ERROR]:"+ex.getMessage.replace("\"","'"),"error")
+        logger.error("[数据采集]:[Greenplum]:[READ]:表名:"+tmpOptions.getOrElse("paths","")+"[ERROR]:"+ex.getMessage.replace("\"","'"),"error")
         throw ex
       }
     }
@@ -90,16 +106,16 @@ object JdbcDataSources extends ZdhDataSources{
     */
   override def process(spark: SparkSession, df: DataFrame, select: Array[Column],zdh_etl_date:String)(implicit dispatch_task_id:String): DataFrame = {
     try{
-      logger.info("[数据采集]:[JDBC]:[SELECT]")
-      logger.debug("[数据采集]:[JDBC]:[SELECT]:"+select.mkString(","))
+      logger.info("[数据采集]:[Greenplum]:[SELECT]")
+      logger.debug("[数据采集]:[Greenplum]:[SELECT]:"+select.mkString(","))
       if(select==null || select.isEmpty){
-        logger.debug("[数据采集]:[JDBC]:[SELECT]:[智能识别字段]" +df.columns.mkString(","))
+        logger.debug("[数据采集]:[Greenplum]:[SELECT]:[智能识别字段]" +df.columns.mkString(","))
         return df
       }
       df.select(select: _*)
     }catch {
       case ex:Exception=>{
-        logger.error("[数据采集]:[JDBC]:[SELECT]:[ERROR]:"+ex.getMessage.replace("\"","'"),"error")
+        logger.error("[数据采集]:[Greenplum]:[SELECT]:[ERROR]:"+ex.getMessage.replace("\"","'"),"error")
         throw ex
       }
     }
@@ -109,28 +125,27 @@ object JdbcDataSources extends ZdhDataSources{
 
   override def writeDS(spark: SparkSession,df:DataFrame,options: Map[String,String], sql: String)(implicit dispatch_task_id:String): Unit = {
     try{
-      logger.info("[数据采集]:[JDBC]:[WRITE]:表名:"+options.getOrElse("dbtable","")+","+options.mkString(","))
+      logger.info("[数据采集]:[JDBC]:[WRITE]:表名:"+options.getOrElse("paths","")+","+options.mkString(","))
 
-      val dbtable: String = options.getOrElse("dbtable", "").toString
-      if(dbtable.trim.equals("")){
-        throw new Exception("[数据采集]:[JDBC]:[WRITE]:dbtable参数为空")
+      val paths = options.getOrElse("paths", "").toString
+      if (paths.trim.equals("")) {
+        throw new Exception("[zdh],Greenplum数据源读取:paths为空")
       }
-
+      var dbtable: String = paths
+      var dbschema=""
+      if(paths.contains(".")){
+        dbtable=paths.split(".")(1)
+        dbschema=paths.split(".")(0)
+      }
       val url=options.getOrElse("url","")
       if(!sql.equals("")){
         deleteJDBC(spark,url,options,sql)
       }
 
-      var format="jdbc"
-      if(options.getOrElse("url","").toLowerCase.contains("jdbc:hive2:")){
-        format="org.apache.spark.sql.hive_jdbc.datasources.hive.HiveRelationProvider"
-        logger.info("[数据采集]:[JDBC]:[WRITE]:表名:"+options.getOrElse("dbtable","")+",使用自定义hive-jdbc数据源")
-      }
-      if(options.getOrElse("url","").toLowerCase.contains("jdbc:clickhouse:")){
-        format="org.apache.spark.sql.hive_jdbc.datasources.clickhouse.ClickHouseRelationProvider"
-        logger.info("[数据采集]:[JDBC]:[WRITE]:表名:"+options.getOrElse("dbtable","")+",使用自定义clickhouse-jdbc数据源")
-      }
-      df.write.format(format).mode(SaveMode.Append).options(options).save()
+      var  tmpOptions=options.+("dbtable"->dbtable,"dbschema"->dbschema)
+      var format="greenplum"
+
+      df.write.format(format).mode(SaveMode.Append).options(tmpOptions).save()
 
     }catch {
       case ex:Exception=>{
@@ -152,7 +167,7 @@ object JdbcDataSources extends ZdhDataSources{
     * @param sql
     */
   def deleteJDBC(spark: SparkSession, url: String, options:  Map[String,String], sql: String)(implicit dispatch_task_id:String): Unit = {
-    logger.info("[数据采集]:[JDBC]:[CLEAR]:url:"+url+","+options.mkString(",")+",sql:"+sql)
+    logger.info("[数据采集]:[Greenplum]:[CLEAR]:url:"+url+","+options.mkString(",")+",sql:"+sql)
     import scala.collection.JavaConverters._
     val properties=new Properties()
     properties.putAll(options.asJava)
@@ -175,7 +190,7 @@ object JdbcDataSources extends ZdhDataSources{
         ps.close()
         cn.close()
         if(ex.getMessage.replace("\"","'").contains("doesn't exist") || ex.getMessage.replace("\"","'").contains("Unknown table")){
-          logger.warn("[数据采集]:[JDBC]:[CLEAR]:[WARN]:"+ex.getMessage.replace("\"","'"))
+          logger.warn("[数据采集]:[Greenplum]:[CLEAR]:[WARN]:"+ex.getMessage.replace("\"","'"))
         }else{
           throw ex
         }
