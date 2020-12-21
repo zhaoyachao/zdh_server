@@ -74,6 +74,22 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter with HttpBaseHandle
       return r
     }
 
+    if (uri.contains("/api/v1/zdh/show_databases")) {
+      val spark = SparkBuilder.getSparkSession()
+      val result = DataWareHouseSources.show_databases(spark)
+      return defaultResponse(result)
+    } else if (uri.contains("/api/v1/zdh/show_tables")) {
+      val spark = SparkBuilder.getSparkSession()
+      val databaseName = param.getOrElse("databaseName", "default").toString
+      val result = DataWareHouseSources.show_tables(spark, databaseName)
+      return defaultResponse(result)
+    } else if (uri.contains("/api/v1/zdh/desc_table")) {
+      val spark = SparkBuilder.getSparkSession()
+      val table = param.getOrElse("table", "").toString
+      val result = DataWareHouseSources.desc_table(spark, table)
+      return defaultResponse(result)
+    }
+
     val dispatchOptions = param.getOrElse("tli", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
     val dispatch_task_id = dispatchOptions.getOrElse("job_id", "001").toString
     val task_logs_id=param.getOrElse("task_logs_id", "001").toString
@@ -90,16 +106,16 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter with HttpBaseHandle
         sqlEtl(param)
       } else if(uri.contains("/api/v1/zdh/drools")){
         droolsEtl(param)
-      }else if (uri.contains("api/v1/zdh/show_databases")) {
+      }else if (uri.contains("/api/v1/zdh/show_databases")) {
         val spark = SparkBuilder.getSparkSession()
         val result = DataWareHouseSources.show_databases(spark)
         defaultResponse(result)
-      } else if (uri.contains("api/v1/zdh/show_tables")) {
+      } else if (uri.contains("/api/v1/zdh/show_tables")) {
         val spark = SparkBuilder.getSparkSession()
         val databaseName = param.getOrElse("databaseName", "default").toString
         val result = DataWareHouseSources.show_tables(spark, databaseName)
         defaultResponse(result)
-      } else if (uri.contains("api/v1/zdh/desc_table")) {
+      } else if (uri.contains("/api/v1/zdh/desc_table")) {
         val spark = SparkBuilder.getSparkSession()
         val table = param.getOrElse("table", "").toString
         val result = DataWareHouseSources.desc_table(spark, table)

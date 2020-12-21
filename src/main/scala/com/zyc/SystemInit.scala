@@ -66,7 +66,7 @@ object SystemInit {
 
     }catch {
       case ex:Exception=>{
-
+        logger.error(ex.getMessage)
       }
     }finally {
       MariadbCommon.delZdhHaInfo("enabled",host, port)

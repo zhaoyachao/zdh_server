@@ -398,7 +398,7 @@ object MariadbCommon {
   def updateTaskStatus2(task_logs_id:String,quartzJobInfo_job_id:String,dispatchOption: Map[String, Any],etl_date:String): Unit ={
     var status = "error"
     try{
-      var msg = "发送ETL任务到zdh处理引擎,存在问题,重试次数已达到最大,状态设置为error"
+      var msg = "ETL任务失败存在问题,重试次数已达到最大,状态设置为error"
       if (dispatchOption.getOrElse("plan_count","3").toString.equalsIgnoreCase("-1") || dispatchOption.getOrElse("plan_count","3").toString.toLong > dispatchOption.getOrElse("count","1").toString.toLong) { //重试
         status = "wait_retry"
         msg = "ETL任务失败存在问题,状态设置为wait_retry等待重试"
