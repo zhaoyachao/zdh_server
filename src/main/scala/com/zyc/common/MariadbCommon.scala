@@ -353,12 +353,12 @@ object MariadbCommon {
     try {
       logger.info(s"开始更新调度任务状态:${quartzJobInfo_job_id},状态:${last_status}")
       //ETL_DATE,MODEL_NAME,STATUS,START_TIME,END_TIME
-      val sql = s"update quartz_job_info set last_status=? where job_id=?"
-      val statement = connection.prepareStatement(sql)
-      statement.setString(1, last_status)
-      statement.setString(2, quartzJobInfo_job_id)
-      statement.execute()
-      statement.close()
+//      val sql = s"update quartz_job_info set last_status=? where job_id=?"
+//      val statement = connection.prepareStatement(sql)
+//      statement.setString(1, last_status)
+//      statement.setString(2, quartzJobInfo_job_id)
+//      statement.execute()
+//      statement.close()
 
       logger.info(s"开始更新任务日志状态:${task_logs_id},状态:${last_status}")
       var sql2 = s"update task_log_instance set status=? , process=? ,update_time= ? ,server_ack='1' where job_id=? and etl_date=? and id=?"
@@ -438,12 +438,12 @@ object MariadbCommon {
         statement2.execute()
         statement2.close()
 
-        val sql = s"update quartz_job_info set last_status=? where job_id=?"
-        val statement = connection.prepareStatement(sql)
-        statement.setString(1, status)
-        statement.setString(2, quartzJobInfo_job_id)
-        statement.execute()
-        statement.close()
+//        val sql = s"update quartz_job_info set last_status=? where job_id=?"
+//        val statement = connection.prepareStatement(sql)
+//        statement.setString(1, status)
+//        statement.setString(2, quartzJobInfo_job_id)
+//        statement.execute()
+//        statement.close()
 
       }else{
         updateTaskStatus(task_logs_id, quartzJobInfo_job_id, status, etl_date,"")
