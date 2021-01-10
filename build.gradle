@@ -248,6 +248,7 @@ dependencies {
 
     compile files('libs/gbase-connector-java-8.3.81.53-build52.8-bin.jar')
 
+    compile files('libs/tispark-assembly-2.3.11.jar')
 
 }
 

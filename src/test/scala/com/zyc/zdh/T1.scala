@@ -8,6 +8,7 @@ import java.util.Properties
 import net.sf.jsqlparser.expression.Expression
 import net.sf.jsqlparser.parser.CCJSqlParserManager
 import net.sf.jsqlparser.statement.delete.Delete
+import org.apache.hadoop.hive.ql.tools.LineageInfo
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.kie.api.KieServices
 import org.scalatest.FunSuite
@@ -260,6 +261,20 @@ class T1 extends FunSuite {
     ksession.insert(m2)
     val res=ksession.fireAllRules()
     println(m2.asScala.mkString(","))
+
+
+
+  }
+
+  test("line_query"){
+    val li=new LineageInfo()
+    val sql="select * from dwd.s1 where abc={{zdh.date}}"
+    li.getLineageInfo(sql)
+
+    for( table <- li.getInputTableList.toArray()){
+
+      println(table)
+    }
 
 
 

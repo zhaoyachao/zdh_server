@@ -33,7 +33,8 @@ trait TEST_TRAIT2 {
     //sparkConf.set("spark.sql.codegen.hugeMethodLimit",(65535*2).toString)
     sparkConf.set("spark.sql.sources.partitionOverwriteMode","dynamic")
     // sparkConf.set("spark.driver.extraJavaOptions", "-Dlog4j.configuration=file:/log4j.properties")
-
+//    sparkConf.set("spark.sql.extensions","org.apache.spark.sql.TiExtensions")
+//    sparkConf.set("spark.tispark.pd.addresses","192.168.110.10:2379")
     //    sparkConf.registerKryoClasses(Array(classOf[Hold]))
     val sparkSession = SparkSession
       .builder()

@@ -18,6 +18,8 @@ object SparkBuilder{
 //    sparkConf.set("spark.sql.orc.enableVectorizedReader","false")
     sparkConf.set("spark.sql.crossJoin.enabled","true")
 //    sparkConf.set("spark.sql.shuffle.partitions","2000")
+//    sparkConf.set("spark.sql.extensions","org.apache.spark.sql.TiExtensions")
+//    sparkConf.set("spark.tispark.pd.addresses","192.168.110.10:2379")
     val sparkSession = SparkSession
       .builder()
       .config(sparkConf)

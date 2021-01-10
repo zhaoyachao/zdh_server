@@ -106,7 +106,7 @@ class JdbcDataSourcesTest extends FunSuite with TEST_TRAIT2{
       "password"->"123456"
     )
     import spark.implicits._
-    JdbcDataSources.updateJDBC(spark,null,opt,"")("001")
+    //JdbcDataSources.updateJDBC(spark,null,opt,"")("001")
 
   }
 
