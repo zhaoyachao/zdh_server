@@ -285,10 +285,16 @@ sourceSets {
         scala {
             srcDirs = ['src/main/scala']
         }
+        resources {
+            srcDir = 'src/main/resources' //资源目录
+        }
     }
     test {
         scala {
             srcDirs = ['src/test/scala']
+        }
+        resources {
+            srcDirs = ['src/main/resources'] //资源目录
         }
     }
 }
