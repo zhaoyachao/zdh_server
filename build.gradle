@@ -286,7 +286,7 @@ sourceSets {
             srcDirs = ['src/main/scala']
         }
         resources {
-            srcDir = 'src/main/resources' //资源目录
+            srcDir 'src/main/resources'
         }
     }
     test {
@@ -294,7 +294,7 @@ sourceSets {
             srcDirs = ['src/test/scala']
         }
         resources {
-            srcDirs = ['src/main/resources'] //资源目录
+            srcDir 'src/main/resources' //资源目录
         }
     }
 }
@@ -367,6 +367,8 @@ configurations {
 
 println "Building project with Scala version $baseScala" + new Date()
 
+println "if you use gradle run this project at local ,please delete builid.gradle `processResources` configuration"
+println "如果本地使用gradle 运行项目,请先删除builid.gradle中processResources相关配置,但是打包时尽量不要把配置文件打到jar中"
 //必不可少-如果没有则项目本身的代码不会打进去
 tasks.withType(ScalaCompile) {
     scalaCompileOptions.additionalParameters = [
