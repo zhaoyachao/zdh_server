@@ -16,6 +16,7 @@ object DataSources {
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
+  val SPARK_ZDH_PROCESS="spark.zdh.process"
   /**
     * 统一数据源处理入口
     *
@@ -55,12 +56,13 @@ object DataSources {
       val outputOptions_tmp=outputOptions.asInstanceOf[Map[String,String]].+("fileType"->fileType,"encoding"->encoding,"sep"->sep,"header"->header)
       //判断是否有spark conf 参数 spark. 开头的都是conf 配置
       inputOptions.filter(p=>p._1.startsWith("spark.")).asInstanceOf[Map[String,String]].foreach(p=>spark_tmp.conf.set(p._1,p._2))
-
+      spark_tmp.conf.set(SPARK_ZDH_PROCESS,"INPUT")
       val df = inPutHandler(spark_tmp, task_logs_id, dispatchOption, etlTaskInfo, inPut, inputOptions, inputCondition, inputCols, outPut, outputOptions_tmp, outputCols, sql)
 
       if (!inPut.toString.toLowerCase.equals("kafka") && !inPut.toString.toLowerCase.equals("flume")) {
         //判断是否有spark conf 参数 spark. 开头的都是conf 配置
         outputOptions_tmp.filter(p=>p._1.startsWith("spark.")).foreach(p=>spark_tmp.conf.set(p._1,p._2))
+        spark_tmp.conf.set(SPARK_ZDH_PROCESS,"OUTPUT")
         outPutHandler(spark_tmp, df, outPut, outputOptions_tmp, outputCols, sql)
         MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "finish", etl_date, "100")
       } else {
@@ -161,7 +163,7 @@ object DataSources {
           logger.error("多源任务对应的单源任务 不支持流数据kafka,flume")
           throw new Exception("多源任务对应的单源任务 不支持流数据kafka,flume")
         }
-
+        spark_tmp.conf.set(SPARK_ZDH_PROCESS,"INPUT")
         val ds = inPutHandler(spark_tmp, task_logs_id, dispatchOption, etlTaskInfo, inPut, dsi_Input ++ inputOptions, filter, inputCols, null, null, outPutCols_tmp, null)
 
         val tableName = etlTaskInfo.getOrElse("etl_context", "").toString.split("#")(1)
@@ -185,6 +187,7 @@ object DataSources {
       //判断是否有spark conf 参数 spark. 开头的都是conf 配置
       outputOptions_tmp.filter(p=>p._1.startsWith("spark.")).foreach(p=>spark_tmp.conf.set(p._1,p._2))
       //写入数据源
+      spark_tmp.conf.set(SPARK_ZDH_PROCESS,"OUTPUT")
       outPutHandler(spark_tmp, result, outPut, outputOptions_tmp, null, sql)
       MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "finish", etl_date, "100")
       if (outPut.trim.toLowerCase.equals("外部下载")) {
@@ -259,7 +262,7 @@ object DataSources {
       }
 
       logger.info("[数据采集]:[SQL]:"+etl_sql)
-
+      spark_tmp.conf.set(SPARK_ZDH_PROCESS,"INPUT")
       val df=DataWareHouseSources.getDS(spark_tmp,dispatchOption,inPut,inputOptions.asInstanceOf[Map[String,String]],
         null,null,null,outPut,outputOptions.asInstanceOf[Map[String,String]],outputCols,etl_sql)
 
@@ -271,7 +274,7 @@ object DataSources {
 
       //判断是否有spark conf 参数 spark. 开头的都是conf 配置
       outputOptions_tmp.filter(p=>p._1.startsWith("spark.")).foreach(p=>spark_tmp.conf.set(p._1,p._2))
-
+      spark_tmp.conf.set(SPARK_ZDH_PROCESS,"OUTPUT")
       outPutHandler(spark_tmp,df,outPut,outputOptions_tmp,outputCols,sql)
 
       MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "finish", etl_date, "100")
@@ -345,7 +348,7 @@ object DataSources {
       val filter_drools=etlDroolsTaskInfo.getOrElse("data_sources_filter_input", "").toString
 
       var ds:DataFrame=null
-
+      spark_tmp.conf.set(SPARK_ZDH_PROCESS,"INPUT")
       if(etlDroolsTaskInfo.getOrElse("more_task","").toString.equalsIgnoreCase("单源ETL")){
         //调用读取数据源
         //输入数据源信息
@@ -439,6 +442,7 @@ object DataSources {
       //判断是否有spark conf 参数 spark. 开头的都是conf 配置
       outputOptions_tmp.filter(p=>p._1.startsWith("spark.")).foreach(p=>spark_tmp.conf.set(p._1,p._2))
       //写入数据源
+      spark_tmp.conf.set(SPARK_ZDH_PROCESS,"OUTPUT")
       outPutHandler(spark_tmp, result, outPut, outputOptions_tmp, null, sql)
       MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "finish", etl_date, "100")
       if (outPut.trim.toLowerCase.equals("外部下载")) {
@@ -501,7 +505,6 @@ object DataSources {
         //logger.error("多源任务对应的单源任务说明必须包含# 格式 'etl任务说明#临时表名'")
         throw new Exception("多源任务处理逻辑必须不为空")
       }
-
 
       //多源处理
       dsi_EtlInfo.foreach(f => {
@@ -777,10 +780,10 @@ object DataSources {
 
     })
     logger.info("完成加载ETL任务转换信息")
-    MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "25")
+    //MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "25")
     val df = zdhDataSources.getDS(spark, dispatchOption, inPut, inputOptions_tmp.asInstanceOf[Map[String, String]].+("primary"->""),
       inputCondition, inputCols, duplicate_columns,outPut, outputOptionions.asInstanceOf[Map[String, String]], outputCols, sql)
-    MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "50")
+    //MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "61")
 
     if (enable_quality.trim.equals("on") && !inPut.equalsIgnoreCase("kafka")) {
       logger.info("任务开启了质量检测,开始进行质量检测")
@@ -794,7 +797,6 @@ object DataSources {
     }else{
       logger.info("未开启质量检测,如果想开启,请打开ETL任务中质量检测开关,提示:如果输入数据源是kafka 不支持质量检测")
     }
-
     val result=zdhDataSources.process(spark, df, outputCols_expr, etl_date)
 
     val repartition_num=inputOptions.getOrElse("repartition_num","").toString
@@ -832,7 +834,6 @@ object DataSources {
   def outPutHandler(spark: SparkSession, df: DataFrame,
                     outPut: String, outputOptionions: Map[String, Any], outputCols: Array[Map[String, String]], sql: String)(implicit dispatch_task_id: String): Unit = {
     try {
-
       logger.info("[数据采集]:[输出]:开始匹配输出数据源")
       //调用写入数据源
       val zdhDataSources: ZdhDataSources = outPut.toString.toLowerCase match {

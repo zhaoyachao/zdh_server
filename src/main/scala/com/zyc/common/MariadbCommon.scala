@@ -62,7 +62,7 @@ object MariadbCommon {
   }
 
 
-  def insertZdhHaInfo(zdh_instance:String,zdh_host:String,zdh_port:String,web_port:String,applicationId:String,spark_history_server:String,master:String): Unit ={
+  def insertZdhHaInfo(zdh_instance:String,zdh_host:String,zdh_port:String,web_port:String,applicationId:String,spark_history_server:String,master:String,online:String): Unit ={
     if (connection == null){
       synchronized {
         logger.info("数据库未初始化连接,尝试初始化连接")
@@ -83,9 +83,9 @@ object MariadbCommon {
     }
     try {
       delZdhHaInfo("enabled",zdh_host,zdh_port)
-      logger.info(s"开始插入zdh_ha_info:${zdh_instance},IP:${zdh_host},PORT:${zdh_port},WEB_PORT:${web_port}")
+      logger.info(s"开始插入zdh_ha_info:${zdh_instance},IP:${zdh_host},PORT:${zdh_port},WEB_PORT:${web_port},ONLINE:${online}")
       //ETL_DATE,MODEL_NAME,STATUS,START_TIME,END_TIME
-      val sql = s"insert into zdh_ha_info (zdh_instance,zdh_url,zdh_host,zdh_port,web_port,zdh_status,application_id,history_server,master) values(?,?,?,?,?,?,?,?,?)"
+      val sql = s"insert into zdh_ha_info (zdh_instance,zdh_url,zdh_host,zdh_port,web_port,zdh_status,application_id,history_server,master,online) values(?,?,?,?,?,?,?,?,?,?)"
       val statement = connection.prepareStatement(sql)
       statement.setString(1, zdh_instance)
       statement.setString(2, "http://"+zdh_host+":"+zdh_port+"/api/v1/zdh")
@@ -96,6 +96,7 @@ object MariadbCommon {
       statement.setString(7,applicationId)
       statement.setString(8,spark_history_server)
       statement.setString(9,master)
+      statement.setString(10,online)
       statement.execute()
       logger.info(s"完成插入zdh_ha_info:${zdh_instance},IP:${zdh_host},PORT:${zdh_port},WEB_PORT:${web_port}")
     } catch {
@@ -276,7 +277,8 @@ object MariadbCommon {
       val resultSet=stat_query.executeQuery()
       val list=new util.ArrayList[Map[String,String]]()
       while (resultSet.next()) {
-        list.add(Map("zdh_host"->resultSet.getString("zdh_host"),"zdh_port"->resultSet.getString("zdh_port"),"id"->resultSet.getString("id")))
+        list.add(Map("zdh_host"->resultSet.getString("zdh_host"),"zdh_port"->resultSet.getString("zdh_port"),
+          "id"->resultSet.getString("id"),"online"->resultSet.getString("online")))
       }
       import collection.mutable._
       import collection.JavaConverters._
@@ -456,6 +458,45 @@ object MariadbCommon {
     }
 
 
+
+  }
+
+  def updateTaskStatus3(task_logs_id:String,process:Int): Unit ={
+    if (connection == null){
+      synchronized {
+        logger.info("数据库未初始化连接,尝试初始化连接")
+        if (connection == null) {
+          if(!getConnect())
+            throw new Exception("connection mariadb fail,could not get connection ")
+        }
+        logger.info("数据库完成初始化连接")
+      }
+    }
+
+    if (connection != null && !connection.isValid(5000)) {
+      logger.info("数据库连接失效,尝试重新连接")
+      connection.close()
+      if (!getConnect())
+        throw new Exception("connection mariadb fail,could not get connection ")
+      logger.info("数据库连接失效,重连成功")
+    }
+
+    try {
+      logger.info(s"开始更新任务日志状态:${task_logs_id},进度:${process}")
+      val sql2 = s"update task_log_instance set process=? ,update_time= ? where id=?"
+      val statement2 = connection.prepareStatement(sql2)
+      statement2.setString(1, process.toString())
+      statement2.setTimestamp(2, new Timestamp(new Date().getTime))
+      statement2.setString(3, task_logs_id)
+      statement2.execute()
+      statement2.close()
+      logger.info(s"完成更新:${task_logs_id},进度:${process}")
+    } catch {
+      case ex: Exception => {
+        logger.error("TASK_LOG_INSTANCE更新数据时出现错误", ex.getCause)
+        throw ex
+      }
+    }
 
   }
 

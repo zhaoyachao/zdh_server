@@ -2,7 +2,7 @@ package com.zyc
 
 import com.typesafe.config.ConfigFactory
 import com.zyc.base.util.HttpUtil
-import com.zyc.common.{HACommon, MariadbCommon, SparkBuilder}
+import com.zyc.common.{HACommon, MariadbCommon, ServerSparkListener, SparkBuilder}
 import com.zyc.netty.NettyServer
 import org.apache.log4j.MDC
 import org.slf4j.LoggerFactory
@@ -20,6 +20,7 @@ object SystemInit {
     val zdh_instance = configLoader.getString("instance")
     val time_interval = configLoader.getString("time_interval").toLong
     val spark_history_server = configLoader.getString("spark_history_server")
+    val online = configLoader.getString("online")
 
     logger.info("开始初始化SparkSession")
     val spark = SparkBuilder.getSparkSession()
@@ -30,7 +31,7 @@ object SystemInit {
     spark.sparkContext.master
     try{
 
-      MariadbCommon.insertZdhHaInfo(zdh_instance,host , port, uiWebUrl.split(":")(2),applicationId,spark_history_server,master)
+      MariadbCommon.insertZdhHaInfo(zdh_instance,host , port, uiWebUrl.split(":")(2),applicationId,spark_history_server,master,online)
       logger.info("开始初始化netty server")
       new Thread(new Runnable {
         override def run(): Unit = new NettyServer().start()
@@ -53,11 +54,20 @@ object SystemInit {
 
         if(list.filter(map=> map.getOrElse("zdh_host","").equals(host) && map.getOrElse("zdh_port","").equals(port)).size<1){
           logger.debug("当前节点丢失,重新注册当前节点")
-          MariadbCommon.insertZdhHaInfo(zdh_instance,host , port, uiWebUrl.split(":")(2),applicationId,spark_history_server,master)
+          MariadbCommon.insertZdhHaInfo(zdh_instance,host , port, uiWebUrl.split(":")(2),applicationId,spark_history_server,master,online)
         }else{
           logger.debug("当前节点存在,更新当前节点")
-          val id=list.filter(map=> map.getOrElse("zdh_host","").equals(host) && map.getOrElse("zdh_port","").equals(port))(0).getOrElse("id","-1")
+          val instance=list.filter(map=> map.getOrElse("zdh_host","").equals(host) && map.getOrElse("zdh_port","").equals(port))(0)
+          val id=instance.getOrElse("id","-1")
           MariadbCommon.updateZdhHaInfoUpdateTime(id)
+          if(instance.getOrElse("online","false").equalsIgnoreCase("false")){
+            if(ServerSparkListener.jobs.size()<=0){
+              logger.info("当前节点下线成功")
+              System.exit(0)
+            }
+            logger.info("当前节点存在正在执行的任务,任务执行完成,自动下线")
+          }
+
         }
 
         Thread.sleep(time_interval*1000)
