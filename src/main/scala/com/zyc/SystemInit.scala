@@ -60,12 +60,20 @@ object SystemInit {
           val instance=list.filter(map=> map.getOrElse("zdh_host","").equals(host) && map.getOrElse("zdh_port","").equals(port))(0)
           val id=instance.getOrElse("id","-1")
           MariadbCommon.updateZdhHaInfoUpdateTime(id)
-          if(instance.getOrElse("online","false").equalsIgnoreCase("false")){
+          if(instance.getOrElse("online","0").equalsIgnoreCase("2")){
             if(ServerSparkListener.jobs.size()<=0){
-              logger.info("当前节点下线成功")
+              logger.info("当前节点物理下线成功")
+              MariadbCommon.delZdhHaInfo("enabled",host,port)
               System.exit(0)
+            }else{
+              logger.info("当前节点存在正在执行的任务,任务执行完成,自动物理下线")
             }
-            logger.info("当前节点存在正在执行的任务,任务执行完成,自动下线")
+          }else if(instance.getOrElse("online","0").equalsIgnoreCase("0")){
+            if(ServerSparkListener.jobs.size()<=0){
+              logger.info("当前节点逻辑下线成功")
+            }else{
+              logger.info("当前节点存在正在执行的任务,任务执行完成,自动逻辑下线")
+            }
           }
 
         }
