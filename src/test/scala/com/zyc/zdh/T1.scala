@@ -268,10 +268,14 @@ class T1 extends FunSuite {
 
   test("line_query"){
     val li=new LineageInfo()
-    val sql="select * from dwd.s1 where abc={{zdh.date}}"
+    val sql="insert overwrite table dwd.d1 select * from (select * from ods.d1) s1 where abc=''"
     li.getLineageInfo(sql)
 
     for( table <- li.getInputTableList.toArray()){
+
+      println(table)
+    }
+    for( table <- li.getOutputTableList.toArray()){
 
       println(table)
     }

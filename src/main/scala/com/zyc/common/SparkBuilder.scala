@@ -7,7 +7,10 @@ object SparkBuilder{
   private var sparkSession:SparkSession=null;
   def initSparkSession(): Unit ={
     val sparkConf = new SparkConf()
-    sparkConf.setMaster("local[7]")
+    val system = System.getProperty("os.name");
+    if(system.toLowerCase().startsWith("win")){
+      sparkConf.setMaster("local[*]")
+    }
     //sparkConf.setAppName("Spark Shenzhen SERVER")
     sparkConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
 //    sparkConf.set("hive.orc.splits.include.file.footer","true")
