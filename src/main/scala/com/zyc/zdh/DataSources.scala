@@ -275,8 +275,12 @@ object DataSources {
       //判断是否有spark conf 参数 spark. 开头的都是conf 配置
       outputOptions_tmp.filter(p=>p._1.startsWith("spark.")).foreach(p=>spark_tmp.conf.set(p._1,p._2))
       spark_tmp.conf.set(SPARK_ZDH_PROCESS,"OUTPUT")
-      outPutHandler(spark_tmp,df,outPut,outputOptions_tmp,outputCols,sql)
 
+      if( outPut!=null && !outPut.toString.trim.equalsIgnoreCase("")){
+        outPutHandler(spark_tmp,df,outPut,outputOptions_tmp,outputCols,sql)
+      }else{
+        logger.info("[数据采集]:[SQL]:无输出数据源")
+      }
       MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "finish", etl_date, "100")
       if (outPut.trim.toLowerCase.equals("外部下载")) {
         //获取路径信息
