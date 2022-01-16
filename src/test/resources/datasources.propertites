@@ -1,0 +1,6 @@
+enable=true
+#url=jdbc:mysql://10.136.1.43/airflow?autoReconnect=true&failoverreadonly=false
+url=jdbc:mysql://127.0.0.1:3306/mydb?serverTimezone=GMT%2B8&useSSL=true
+driver=com.mysql.cj.jdbc.Driver
+username=zyc
+password=123456
