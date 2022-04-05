@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory
 trait ZdhDataSources {
 
   val loggerz=LoggerFactory.getLogger(this.getClass)
-
   /**
     * 获取schema
     *

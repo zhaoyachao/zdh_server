@@ -197,7 +197,6 @@ object HbaseDataSources extends ZdhDataSources {
         return
       }
 
-      println("=================" + columns.mkString(","))
       val defalutFamily = getDefaultFamily(Htable,conn)
       //列族
       val cfs = columns.filter(!_.equalsIgnoreCase("row_key")).map(f => {
