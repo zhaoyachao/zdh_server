@@ -17,6 +17,7 @@ object DataSources extends Serializable{
   val logger = LoggerFactory.getLogger(this.getClass)
 
   val SPARK_ZDH_PROCESS="spark.zdh.process"
+  val SPARK_ZDH_LOCAL_PROCESS = "spark.zdh.local.process"
   /**
     * 统一数据源处理入口
     *
@@ -831,6 +832,7 @@ object DataSources extends Serializable{
       case "greenplum"=> GreenplumDataSources
       case "tidb" => TidbDataSources
       case "iceberg" => IcebergDataSources
+      case "ftp" => FtpDataSources
       case _ => throw new Exception("数据源类型无法匹配")
     }
     var outputCols_expr: Array[Column] = null
@@ -1032,6 +1034,10 @@ object DataSources extends Serializable{
         case "iceberg" => {
           logger.info("[数据采集]:[输出]:输出源为[ICEBERG]")
           IcebergDataSources
+        }
+        case "ftp" => {
+          logger.info("[数据采集]:[输出]:输出源为[FTP]")
+          FtpDataSources
         }
         case x => throw new Exception("[数据采集]:[输出]:无法识别输出数据源:" + x)
       }

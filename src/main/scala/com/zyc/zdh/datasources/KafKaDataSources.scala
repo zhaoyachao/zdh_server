@@ -278,6 +278,7 @@ object KafKaDataSources extends ZdhDataSources {
 
   override def writeDS(spark: SparkSession, df: DataFrame, options: Map[String, String], sql: String)(implicit dispatch_task_id: String): Unit = {
     try {
+      spark.sparkContext.setLocalProperty(DataSources.SPARK_ZDH_LOCAL_PROCESS,"OUTPUT")
       logger.info("[数据采集]:[KAFKA]:[WRITE]:topic:" + options.getOrElse("paths", "") + "," + options.mkString(","))
       val url = options.getOrElse("url", "")
       if (url.equals("")) {
@@ -300,7 +301,7 @@ object KafKaDataSources extends ZdhDataSources {
       }
       df.foreachPartition(rdd => {
         rdd.foreach(record => {
-          kafkaProducer.value.send(topic, record.getAs("key").toString, record.getAs("value").toString)
+          kafkaProducer.value.send(topic, record.getAs[Any]("key").toString, record.getAs[Any]("value").toString)
         })
       })
     } catch {

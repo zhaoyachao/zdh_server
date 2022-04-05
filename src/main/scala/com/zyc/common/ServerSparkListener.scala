@@ -26,14 +26,20 @@ class ServerSparkListener extends SparkListener {
 
   override def onJobStart(jobStart: SparkListenerJobStart): Unit = {
     jobStart.properties.keySet().toArray.foreach(key=> println(key+"==="+jobStart.properties.getProperty(key.toString)))
-    val PROCESS=jobStart.properties.getProperty(DataSources.SPARK_ZDH_PROCESS)
+    var PROCESS=jobStart.properties.getProperty(DataSources.SPARK_ZDH_PROCESS)
     println("Process:"+PROCESS)
+    if(PROCESS == null){
+      PROCESS=jobStart.properties.getProperty(DataSources.SPARK_ZDH_LOCAL_PROCESS, "OUTPUT")
+    }
     val pro_num:Int = PROCESS match {
       case "INPUT" => 25
       case "OUTPUT" => 61
     }
     //获取对应的task_log_instance id
     val tli_id=jobStart.properties.getProperty("spark.jobGroup.id").split("_")(0)
+    if(tli_id == null || tli_id.length() != 18){
+      return ;
+    }
     ServerSparkListener.job_tli.put(jobStart.jobId,tli_id)
     MariadbCommon.updateTaskStatus3(tli_id,pro_num)
     ServerSparkListener.jobs.put(jobStart.jobId,pro_num)
@@ -44,6 +50,9 @@ class ServerSparkListener extends SparkListener {
   }
 
   override def onJobEnd(jobEnd: SparkListenerJobEnd): Unit = {
+    if(!ServerSparkListener.jobs.containsKey(jobEnd.jobId)){
+     return ;
+    }
     ServerSparkListener.jobs.remove(jobEnd.jobId)
     ServerSparkListener.stages.get(jobEnd.jobId).foreach(stage=>{
       ServerSparkListener.stage_job.remove(stage.stageId)
@@ -60,6 +69,9 @@ class ServerSparkListener extends SparkListener {
 
   override def onStageCompleted(stageCompleted: SparkListenerStageCompleted): Unit = {
     val stageId=stageCompleted.stageInfo.stageId
+    if(!ServerSparkListener.stage_job.containsKey(stageId)){
+      return ;
+    }
     //stage 获取job
     val job_id=ServerSparkListener.stage_job.get(stageId)
     //获取所有的任务数

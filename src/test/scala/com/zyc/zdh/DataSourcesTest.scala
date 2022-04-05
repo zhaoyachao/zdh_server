@@ -492,9 +492,6 @@ class DataSourcesTest extends TEST_TRAIT2{
 //    val df = hive.table("zt2")
 //    df.show()
 
-
-
-
   }
 
   def testRegex {

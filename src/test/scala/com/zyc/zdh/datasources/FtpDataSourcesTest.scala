@@ -30,4 +30,66 @@ class FtpDataSourcesTest extends  TEST_TRAIT2{
 
   }
 
+  @Test
+  def testGetDSCSV {
+    val inputOptions=Map("sep"->"|",
+      "url"->"192.168.110.10",
+      "paths"->"/a.txt",
+      "user"->"zyc",
+      "sep"-> "|",
+      "password"->"123456",
+      "header"->"false",
+      "fileType"->"csv"
+    )
+    val inputCols=Array("name","age")
+    val df=FtpDataSources.getDS(spark,null,"ftp",inputOptions,"",inputCols,null,null,null,null,null)("")
+    df.show()
+
+
+  }
+
+  @Test
+  def testWriteDSCSV {
+    val inputOptions=Map("sep"->"|",
+      "url"->"192.168.110.10",
+      "paths"->"/a.txt",
+      "user"->"zyc",
+      "sep"-> "|",
+      "password"->"123456",
+      "header"->"false",
+      "fileType"->"csv"
+    )
+    val outputOptions=Map(
+      "url"->"192.168.110.10",
+      "paths"->"/a1.txt",
+      "user"->"zyc",
+      "sep"-> "||",
+      "password"->"123456",
+      "header"->"false",
+      "fileType"->"csv"
+    )
+    val inputCols=Array("name","age")
+    val df=FtpDataSources.getDS(spark,null,"ftp",inputOptions,"",inputCols,null,null,null,null,null)("")
+
+    FtpDataSources.writeDS(spark,df,outputOptions,null)("")
+
+
+  }
+
+  @Test
+  def testGetDSJSON {
+    val inputOptions=Map("sep"->"|",
+      "url"->"192.168.110.10",
+      "paths"->"b.json",
+      "user"->"zyc",
+      "sep"-> "|",
+      "password"->"123456",
+      "header"->"false",
+      "fileType"->"json"
+    )
+    val inputCols=Array("name","age")
+    val df=FtpDataSources.getDS(spark,null,"ftp",inputOptions,"",inputCols,null,null,null,null,null)("")
+    df.show()
+  }
+
 }

@@ -3,7 +3,7 @@ package com.zyc.zdh.datasources
 import java.util
 
 import com.zyc.common.LogCommon
-import com.zyc.zdh.ZdhDataSources
+import com.zyc.zdh.{DataSources, ZdhDataSources}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hbase._
@@ -164,6 +164,7 @@ object HbaseDataSources extends ZdhDataSources {
   }
 
   override def writeDS(spark: SparkSession, df: DataFrame, options: Map[String, String], sql: String = "")(implicit dispatch_task_id: String): Unit = {
+    spark.sparkContext.setLocalProperty(DataSources.SPARK_ZDH_LOCAL_PROCESS,"OUTPUT")
     var conn: Connection = null
     // var HbaseTale: Table = null
     val table = options.getOrElse("paths", "").toString
@@ -171,7 +172,7 @@ object HbaseDataSources extends ZdhDataSources {
     logger.info("[数据采集]:[HBASE]:[WRITE]:如果设置write_mode 为hfile 会使用hfile文件方式写入hbase,此方法适用于大数据量写入hbase")
     if (options.getOrElse("write_mode", "").equalsIgnoreCase("hfile")) {
       logger.info("[数据采集]:[HBASE]:[WRITE]:选择HFILE 方式写入")
-      writeHFile(spark, df, options, sql);
+      writeHFile(spark, df, options, sql)
       return
     }
 
@@ -192,6 +193,7 @@ object HbaseDataSources extends ZdhDataSources {
       val columns = df.columns
       if (!columns.contains("row_key")) {
         logger.info("[数据采集]:[HBASE]:[WRITE]:表名:" + table + "[ERROR]:输出的例必须包含row_key")
+        throw new Exception("输出的例必须包含row_key");
         return
       }
 
@@ -200,6 +202,9 @@ object HbaseDataSources extends ZdhDataSources {
       //列族
       val cfs = columns.filter(!_.equalsIgnoreCase("row_key")).map(f => {
         if (f.contains(":")) {
+          if(f.split(":").size!=2 && f.split(":")(1).trim.equalsIgnoreCase("")){
+            throw new Exception("hbase列簇及字段配置异常,"+f)
+          }
           f.split(":")(0)
         } else {
           defalutFamily
@@ -212,20 +217,20 @@ object HbaseDataSources extends ZdhDataSources {
       var df_tmp = merge(spark,df,options)
 
       df_tmp.rdd.map(row => {
-        val put = new Put(Bytes.toBytes(row.getAs("row_key").toString))
+        val put = new Put(Bytes.toBytes(row.getAs[Any]("row_key").toString))
         columns.foreach(f => {
           if (!f.equals("row_key")) {
             if (f.contains(":")) {
               //说明有指定的列族
               val col = f.split(":")
-              val value = row.getAs[String](f)
-              if (!value.equals(""))
-                put.addColumn(Bytes.toBytes(col(0)), Bytes.toBytes(col(1)), Bytes.toBytes(value))
+              val value = row.getAs[Any](f)
+              if (value != null && !value.toString.equals(""))
+                put.addColumn(Bytes.toBytes(col(0)), Bytes.toBytes(col(1)), Bytes.toBytes(value.toString))
             } else {
               //println(row.getAs(f).getClass.getName)
-              val value = row.getAs(f).toString
-              if (!value.equals(""))
-                put.addColumn(Bytes.toBytes(defalutFamily), Bytes.toBytes(f), Bytes.toBytes(value))
+              val value = row.getAs[Any](f)
+              if (value != null && !value.toString.equals(""))
+                put.addColumn(Bytes.toBytes(defalutFamily), Bytes.toBytes(f), Bytes.toBytes(value.toString))
             }
           }
         })
@@ -442,8 +447,8 @@ object HbaseDataSources extends ZdhDataSources {
     val df_tmp = df.rdd.map(f => {
       val d = columns.map(c => {
         val map_f = c match {
-          case a if a.contains(":") => Map(c -> f.getAs(c).toString)
-          case _ => Map(defalutFamily+":" + c -> f.getAs(c).toString)
+          case a if a.contains(":") => Map(c -> f.getAs[Any](c).toString)
+          case _ => Map(defalutFamily+":" + c -> f.getAs[Any](c).toString)
         }
         map_f
       }

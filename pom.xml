@@ -115,7 +115,6 @@
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-core_2.11</artifactId>
       <version>${spark.version}</version>
-      <scope>compile</scope>
       <exclusions>
         <exclusion>
           <artifactId>jackson-module-scala_2.11</artifactId>
@@ -424,7 +423,7 @@
     <dependency>
       <groupId>org.apache.hudi</groupId>
       <artifactId>hudi-spark-bundle_2.11</artifactId>
-      <version>0.5.3</version>
+      <version>0.10.1</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -490,7 +489,7 @@
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>42.2.16</version>
+      <version>42.2.25</version>
       <scope>compile</scope>
     </dependency>
     <dependency>

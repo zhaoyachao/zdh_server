@@ -6,6 +6,7 @@
    + kafka 1.x,2.x
    + scala 2.11.12
    + java 1.8
+   + hbase < 1.3.6 (可选)
 
 # 提示
    
