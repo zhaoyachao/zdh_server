@@ -1,3 +1,4 @@
+set ff=unix
 BIN_PATH=`dirname $0`
 BASE_RUN_PATH=$(cd "$BIN_PATH/../"; pwd)
 files=`sh $BASE_RUN_PATH/bin/ljars.sh $BASE_RUN_PATH`
