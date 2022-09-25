@@ -69,7 +69,7 @@ class JdbcDataSourcesTest extends  TEST_TRAIT2{
     )
     import org.apache.spark.sql.functions._
     val dt=spark.range(10).select(col("id"))
-    JdbcDataSources.writeDS(spark,dt,inputOptions,"")
+    //JdbcDataSources.writeDS(spark,dt,inputOptions,"")
 
     val df=JdbcDataSources.getDS(spark,dispatchOption,inPut,inputOptions,"",null,null,null,null,null,null )
 
@@ -83,13 +83,13 @@ class JdbcDataSourcesTest extends  TEST_TRAIT2{
     val dispatchOption = null
     val inPut = "jdbc"
     val options =Map(
-      "url"->"jdbc:postgresql://192.168.110.10:5432/",
+      "url"->"jdbc:postgresql://192.168.110.10:5432/postgres",
     "delimiter"-> "\t",
-      "dbschema"-> "postgres",
+      "dbschema"-> "public",
     "dbtable"-> "t1",
     "user"-> "zyc",
     "password"-> "123456")
-    val df=spark.read.format("org.apache.spark.sql.execution.datasources.greenplum.DefaultSource")
+    val df=spark.read.format("greenplum")
         .options(options).load()
 
     df.show(false)

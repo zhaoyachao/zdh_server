@@ -94,6 +94,14 @@
       <systemPath>${basedir}/libs/greenplum-jdbc-5.1.4.jar</systemPath>
     </dependency>
 
+<!--    <dependency>-->
+<!--      <groupId>io.pivotal.greenplum.spark</groupId>-->
+<!--      <artifactId>greenplum-spark_2.11</artifactId>-->
+<!--      <version>1.6.0</version>-->
+<!--      <scope>system</scope>-->
+<!--      <systemPath>${basedir}/libs/greenplum-spark_2.11-1.6.0.jar</systemPath>-->
+<!--    </dependency>-->
+
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
@@ -553,6 +561,12 @@
       <artifactId>pegdown</artifactId>
       <version>1.4.2</version>
       <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.log4mongo</groupId>
+      <artifactId>log4mongo-java</artifactId>
+      <version>0.9.0</version>
     </dependency>
 
   </dependencies>

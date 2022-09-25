@@ -8,7 +8,7 @@ nohup ${SPARK_HOME}/bin/spark-submit \
  --driver-memory 800M \
  --conf "spark.driver.extraJavaOptions=-Dlog4j.configuration=file:$BASE_RUN_PATH/conf/log4j.properties" \
  --driver-class-path $BASE_RUN_PATH/conf:$BASE_RUN_PATH/libs \
- --files $BASE_RUN_PATH/conf/application.conf,$BASE_RUN_PATH/conf/datasources.propertites \
+ --files $BASE_RUN_PATH/conf/application.conf,$BASE_RUN_PATH/conf/datasources.properties \
  --jars $files \
  $BASE_RUN_PATH/zdh_spark.jar \
  >zdh_spark.log &

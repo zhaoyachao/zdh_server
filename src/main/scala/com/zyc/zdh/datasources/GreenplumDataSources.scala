@@ -57,8 +57,8 @@ object GreenplumDataSources extends ZdhDataSources{
       }
       var dbschema=""
       if(paths.contains(".")){
-        dbtable=paths.split(".")(1)
-        dbschema=paths.split(".")(0)
+        dbtable=paths.split("\\.")(1)
+        dbschema=paths.split("\\.")(0)
       }else{
         dbtable=paths
       }
@@ -73,10 +73,10 @@ object GreenplumDataSources extends ZdhDataSources{
         logger.info("[zdh],Greenplum数据源读取:password为空")
       //  throw new Exception("[zdh],jdbc数据源读取:password为空")
       }
-      val driver: String = inputOptions.getOrElse("driver", "").toString
-      if(driver.trim.equals("")){
-        throw new Exception("[zdh],Greenplum数据源读取:driver为空")
-      }
+//      val driver: String = inputOptions.getOrElse("driver", "").toString
+//      if(driver.trim.equals("")){
+//        throw new Exception("[zdh],Greenplum数据源读取:driver为空")
+//      }
 
       tmpOptions=inputOptions.+("dbtable"->dbtable,"dbschema"->dbschema)
 
