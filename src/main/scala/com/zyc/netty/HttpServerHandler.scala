@@ -166,7 +166,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter with HttpBaseHandle
 
   private def getParam(uri: String): Map[String, Any] = {
     val path = URLDecoder.decode(uri, chartSet)
-    val cont = uri.substring(path.lastIndexOf("?") + 1)
+    val cont = path.substring(path.lastIndexOf("?") + 1)
     if (cont.contains("="))
       cont.split("&").map(f => (f.split("=")(0), f.split("=")(1))).toMap[String, Any]
     else
