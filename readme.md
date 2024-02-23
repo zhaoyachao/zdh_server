@@ -57,3 +57,6 @@
     使用tidb 连接时,需要在zdh_server 启动配置文件中添加如下配置
     spark.tispark.pd.addresses 192.168.1.100:2379
     spark.sql.extensions org.apache.spark.sql.TiExtensions
+    
+# 版本更新说明
+   + v5.1.1 修复http数据源    

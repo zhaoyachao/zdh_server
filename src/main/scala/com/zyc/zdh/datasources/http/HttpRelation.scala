@@ -1,5 +1,6 @@
 package com.zyc.zdh.datasources.http
 
+import java.sql.Timestamp
 import java.util.concurrent.TimeUnit
 
 import org.apache.http.NameValuePair
@@ -16,8 +17,7 @@ import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedFilteredScan}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{Row, SQLContext, SparkSession}
-
-import scala.collection.mutable.ArrayBuffer
+import org.json4s.{CustomSerializer, DefaultFormats, JLong}
 
 
 case class HttpRelation(
@@ -26,15 +26,42 @@ case class HttpRelation(
                          httpOptions: HttpOptions)(@transient val sparkSession: SparkSession)
   extends BaseRelation
     with PrunedFilteredScan {
+  case object TimestampSerializer extends CustomSerializer[java.sql.Timestamp](format => ( {
+    case _ => null
+  }, {
+    case ts: Timestamp =>JLong(ts.getTime)
+  })
+  )
+  implicit val formats = DefaultFormats
+
   override def sqlContext: SQLContext =sparkSession.sqlContext
 
   override def buildScan(requiredColumns: Array[String], filters: Array[Filter]): RDD[Row] = {
 
     import sparkSession.implicits._
-    println(httpOptions.getHttp_Url)
-    println(httpOptions.getSep())
+    //println(httpOptions.getHttp_Url)
+    //println(httpOptions.getSep())
     //连接http 获取数据
-    val http_result=requestUrl(httpOptions.getHttp_Url,httpOptions.parameters)
+    var http_result=requestUrl(httpOptions.getHttp_Url,httpOptions.parameters)
+    import org.json4s.jackson.Serialization.read
+    import org.json4s.jackson.Serialization.write
+
+    if(!httpOptions.getResultColumn().isEmpty){
+      var result = read[Map[String,Any]](http_result)
+      var tmp:Any = null
+      var tmp2:AnyRef = null
+      val columns = httpOptions.getResultColumn().split("\\.")
+      Seq.range(0, columns.size).foreach(index=>{
+        if(index == 0){
+          tmp = result.get(columns(index)).get
+        }else{
+          result = tmp.asInstanceOf[Map[String,Any]]
+          tmp = result.get(columns(index)).get
+        }
+        tmp2 = tmp.asInstanceOf[AnyRef]
+      })
+      http_result = write(tmp2)
+    }
 
     if(httpOptions.getFileType().toLowerCase.equals("csv")){
       val sep=httpOptions.getSep()
@@ -135,19 +162,19 @@ case class HttpRelation(
 
   def post(addr:String,param: Seq[(String,String)]):String={
     val req=new HttpPost(addr)
-    val listParms=new ArrayBuffer[NameValuePair]()
-    param.foreach(r=>{
-      listParms+=new BasicNameValuePair(r._1,r._2)
-    })
-    import scala.collection.JavaConverters._
-    val entity=new UrlEncodedFormEntity(listParms.toList.asJava,"utf-8")
+
+    import org.json4s.jackson.Serialization.write
+    implicit val formats = org.json4s.DefaultFormats
+    //import scala.collection.JavaConverters._
+    //val entity=new UrlEncodedFormEntity(listParms.toList.asJava,"utf-8")
+    val entity = new StringEntity(write(param.toMap))
     req.setEntity(entity)
     val client=HttpClient()
     val httpResponse = client.execute(req)
     val resEntity = httpResponse.getEntity()
     var content = ""
     if (resEntity != null) {
-      content=EntityUtils.toString(entity)
+      content=EntityUtils.toString(resEntity)
     }
     client.close()
     content
@@ -162,7 +189,7 @@ case class HttpRelation(
     val resEntity = httpResponse.getEntity()
     var content = ""
     if (resEntity != null) {
-      content=EntityUtils.toString(entity)
+      content=EntityUtils.toString(resEntity)
     }
     client.close()
     content

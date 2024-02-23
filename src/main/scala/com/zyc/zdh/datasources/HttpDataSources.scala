@@ -8,6 +8,7 @@ object HttpDataSources extends ZdhDataSources {
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
+  val http_source = "com.zyc.zdh.datasources.http.HttpRelationProvider"
   override def getDS(spark: SparkSession, dispatchOption: Map[String, Any], inPut: String, inputOptions: Map[String, String],
                      inputCondition: String, inputCols: Array[String], duplicateCols:Array[String],outPut: String, outputOptionions: Map[String, String], outputCols: Array[Map[String, String]], sql: String)(implicit dispatch_task_id: String): DataFrame = {
    try{
@@ -22,7 +23,7 @@ object HttpDataSources extends ZdhDataSources {
      if (paths.trim.equals("")) {
        throw new Exception("[zdh],http数据源读取:paths为空")
      }
-     var df=spark.read.format("com.zyc.zdh.datasources.http.datasources.HttpRelationProvider")
+     var df=spark.read.format(http_source)
        .options(inputOptions)
        .option("url",url)
        .option("schema",inputCols.mkString(","))

@@ -9,15 +9,15 @@ class HttpRelationProvider extends CreatableRelationProvider
 
   override def shortName() = "http"
 
-  override def createRelation(sqlContext: SQLContext, mode: SaveMode, parameters: Map[String, String], data: DataFrame) = {
+  override def createRelation(sqlContext: SQLContext, mode: SaveMode, parameters: Map[String, String], data: DataFrame):HttpRelation = {
 
-    println("http参数1:"+parameters.mkString(","))
+    //println("http参数1:"+parameters.mkString(","))
     createRelation(sqlContext,parameters)
   }
 
-  override def createRelation(sqlContext: SQLContext, parameters: Map[String, String]) = {
+  override def createRelation(sqlContext: SQLContext, parameters: Map[String, String]):HttpRelation = {
     import sqlContext.implicits._
-    println("http参数2:"+parameters.mkString(","))
+    //println("http参数2:"+parameters.mkString(","))
     val httpOptions = new HttpOptions(parameters)
     val schema=JsonSchemaBuilder.getJsonSchema(httpOptions.getSchema())
     val parts = null

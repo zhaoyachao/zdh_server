@@ -41,6 +41,10 @@ class HttpOptions(
     parameters.getOrElse(SEP,",").toString
   }
 
+  def getResultColumn(): String ={
+    parameters.getOrElse(RESULT_COLUMN, "").toString
+  }
+
 }
 
 object HttpOptions {
@@ -52,7 +56,7 @@ object HttpOptions {
   val TIME_OUT="time_out"
   val FILETYPE="fileType"
   val SEP="sep"
-
+  val RESULT_COLUMN="result_column"
 
 
 }
