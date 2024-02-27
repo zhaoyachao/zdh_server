@@ -2,11 +2,59 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.zyc</groupId>
   <artifactId>zdh_spark</artifactId>
-  <version>5.0.0-RELEASE</version>
+  <version>5.3.0-RELEASE</version>
   <inceptionYear>2022</inceptionYear>
   <properties>
     <scala.version>2.11.12</scala.version>
     <spark.version>2.4.4</spark.version>
+
+    <ojdbc6.version>11.2</ojdbc6.version>
+    <terajdbc4.version>16.10.00.05</terajdbc4.version>
+    <tdgssconfig.version>16.00.00.01</tdgssconfig.version>
+    <kingbasejdbc3.version>7.1.2.0711</kingbasejdbc3.version>
+    <gbase.version>8.3.81.53-build52.8</gbase.version>
+    <redshift-jdbc42.version>1.2.41.1067</redshift-jdbc42.version>
+    <greenplum-jdbc.version>5.1.4</greenplum-jdbc.version>
+    <junit.version>4.4</junit.version>
+    <specs.version>1.2.5</specs.version>
+    <jackson.version>2.11.2</jackson.version>
+    <fastjson.version>1.2.47</fastjson.version>
+    <gson.version>2.8.2</gson.version>
+    <commons-compiler.version>3.0.8</commons-compiler.version>
+    <hive-jdbc.version>1.2.1</hive-jdbc.version>
+    <spark-excel.version>0.13.1</spark-excel.version>
+    <spark-xml.version>0.9.0</spark-xml.version>
+    <elasticsearch.version>7.6.0</elasticsearch.version>
+    <mongo-spark.version>2.4.1</mongo-spark.version>
+    <mongo-java-driver.version>3.12.2</mongo-java-driver.version>
+    <netty.version>4.1.23.Final</netty.version>
+    <json4s.version>3.5.4</json4s.version>
+    <config.version>1.3.2</config.version>
+    <httpclient.version>4.5.5</httpclient.version>
+    <commons-email.version>1.2</commons-email.version>
+    <poi.version>4.0.1</poi.version>
+    <mysql.version>8.0.11</mysql.version>
+    <delta.version>0.5.0</delta.version>
+    <hbase.version>1.3.6</hbase.version>
+    <protobuf.version>2.5.0</protobuf.version>
+    <jsqlparser.version>3.1</jsqlparser.version>
+    <spark-redis.version>2.4.2</spark-redis.version>
+    <spark-cassandra.version>2.4.3</spark-cassandra.version>
+    <sftp.version>1.0.3</sftp.version>
+    <kudu.version>1.11.1</kudu.version>
+    <hudi-spark.version>0.10.1</hudi-spark.version>
+    <clickhouse-native-jdbc.version>2.1-stable</clickhouse-native-jdbc.version>
+    <drools.version>7.40.0.Final</drools.version>
+    <mysql-binlog-connector-java.version>0.21.0</mysql-binlog-connector-java.version>
+    <mariadb-java-client.version>2.6.2</mariadb-java-client.version>
+    <presto-jdbc.version>0.240</presto-jdbc.version>
+    <postgresql.version>42.2.25</postgresql.version>
+    <kylin-jdbc.version>3.0.2</kylin-jdbc.version>
+    <iceberg-spark.version>0.11.1</iceberg-spark.version>
+    <scalatest_2.11.version>3.0.5</scalatest_2.11.version>
+    <scala-xml_2.11.version>1.1.0</scala-xml_2.11.version>
+    <pegdown.version>1.4.2</pegdown.version>
+    <log4mongo-java.version>0.9.0</log4mongo-java.version>
   </properties>
 
   <repositories>
@@ -41,7 +89,7 @@
     <dependency>
       <groupId>com.oracle</groupId>
       <artifactId>ojdbc6</artifactId>
-      <version>11.2</version>
+      <version>${ojdbc6.version}</version>
       <scope>system</scope>
       <systemPath>${basedir}/libs/ojdbc6.jar</systemPath>
     </dependency>
@@ -49,7 +97,7 @@
     <dependency>
       <groupId>com.teradata.jdbc</groupId>
       <artifactId>terajdbc4</artifactId>
-      <version>16.10.00.05</version>
+      <version>${terajdbc4.version}</version>
       <scope>system</scope>
       <systemPath>${basedir}/libs/terajdbc4.jar</systemPath>
     </dependency>
@@ -57,7 +105,7 @@
     <dependency>
       <groupId>com.teradata.tdgss</groupId>
       <artifactId>tdgssconfig</artifactId>
-      <version>16.00.00.01</version>
+      <version>${tdgssconfig.version}</version>
       <scope>system</scope>
       <systemPath>${basedir}/libs/tdgssconfig.jar</systemPath>
     </dependency>
@@ -65,7 +113,7 @@
     <dependency>
       <groupId>com.kingbase</groupId>
       <artifactId>kingbasejdbc3</artifactId>
-      <version>7.1.2.0711</version>
+      <version>${kingbasejdbc3.version}</version>
       <scope>system</scope>
       <systemPath>${basedir}/libs/kingbasejdbc3.jar</systemPath>
     </dependency>
@@ -73,7 +121,7 @@
     <dependency>
       <groupId>com.gbase.jdbc</groupId>
       <artifactId>gbase-connector-java-8.3.81.53-build52.8-bin</artifactId>
-      <version>8.3.81.53-build52.8</version>
+      <version>${gbase.version}</version>
       <scope>system</scope>
       <systemPath>${basedir}/libs/gbase-connector-java-8.3.81.53-build52.8-bin.jar</systemPath>
     </dependency>
@@ -81,7 +129,7 @@
     <dependency>
       <groupId>com.amazon.redshift</groupId>
       <artifactId>redshift-jdbc42</artifactId>
-      <version>1.2.41.1067</version>
+      <version>${redshift-jdbc42.version}</version>
       <scope>system</scope>
       <systemPath>${basedir}/libs/redshift-jdbc42-1.2.43.1067.jar</systemPath>
     </dependency>
@@ -89,7 +137,7 @@
     <dependency>
       <groupId>com.pivotal</groupId>
       <artifactId>greenplum-jdbc</artifactId>
-      <version>5.1.4</version>
+      <version>${greenplum-jdbc.version}</version>
       <scope>system</scope>
       <systemPath>${basedir}/libs/greenplum-jdbc-5.1.4.jar</systemPath>
     </dependency>
@@ -110,13 +158,14 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.4</version>
+      <version>${junit.version}</version>
+
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.specs</groupId>
       <artifactId>specs</artifactId>
-      <version>1.2.5</version>
+      <version>${specs.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -137,25 +186,25 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>2.11.2</version>
+      <version>${jackson.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.module</groupId>
       <artifactId>jackson-module-scala_2.11</artifactId>
-      <version>2.11.2</version>
+      <version>${jackson.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.alibaba</groupId>
       <artifactId>fastjson</artifactId>
-      <version>1.2.47</version>
+      <version>${fastjson.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
-      <version>2.8.2</version>
+      <version>${gson.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -173,7 +222,7 @@
     <dependency>
       <groupId>org.codehaus.janino</groupId>
       <artifactId>commons-compiler</artifactId>
-      <version>3.0.8</version>
+      <version>${commons-compiler.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -191,13 +240,13 @@
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-jdbc</artifactId>
-      <version>1.2.1</version>
+      <version>${hive-jdbc.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.spark-project.hive</groupId>
       <artifactId>hive-jdbc</artifactId>
-      <version>1.2.1.spark2</version>
+      <version>${hive-jdbc.version}.spark2</version>
       <scope>compile</scope>
       <exclusions>
         <exclusion>
@@ -227,97 +276,97 @@
     <dependency>
       <groupId>com.crealytics</groupId>
       <artifactId>spark-excel_2.11</artifactId>
-      <version>0.13.1</version>
+      <version>${spark-excel.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.databricks</groupId>
       <artifactId>spark-xml_2.11</artifactId>
-      <version>0.9.0</version>
+      <version>${spark-xml.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.elasticsearch</groupId>
       <artifactId>elasticsearch-spark-20_2.11</artifactId>
-      <version>7.6.0</version>
+      <version>${elasticsearch.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.mongodb.spark</groupId>
       <artifactId>mongo-spark-connector_2.11</artifactId>
-      <version>2.4.1</version>
+      <version>${mongo-spark.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.mongodb</groupId>
       <artifactId>mongo-java-driver</artifactId>
-      <version>3.12.2</version>
+      <version>${mongo-java-driver.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-all</artifactId>
-      <version>4.1.23.Final</version>
+      <version>${netty.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.json4s</groupId>
       <artifactId>json4s-native_2.11</artifactId>
-      <version>3.5.4</version>
+      <version>${json4s.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.json4s</groupId>
       <artifactId>json4s-jackson_2.11</artifactId>
-      <version>3.5.4</version>
+      <version>${json4s.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.typesafe</groupId>
       <artifactId>config</artifactId>
-      <version>1.3.2</version>
+      <version>${config.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <version>4.5.5</version>
+      <version>${httpclient.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-email</artifactId>
-      <version>1.2</version>
+      <version>${commons-email.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.poi</groupId>
       <artifactId>poi</artifactId>
-      <version>4.0.1</version>
+      <version>${poi.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.poi</groupId>
       <artifactId>poi-ooxml</artifactId>
-      <version>4.0.1</version>
+      <version>${poi.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
-      <version>8.0.11</version>
+      <version>${mysql.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>io.delta</groupId>
       <artifactId>delta-core_2.11</artifactId>
-      <version>0.5.0</version>
+      <version>${delta.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hbase</groupId>
       <artifactId>hbase-client</artifactId>
-      <version>1.3.6</version>
+      <version>${hbase.version}</version>
       <scope>compile</scope>
       <exclusions>
         <exclusion>
@@ -337,7 +386,7 @@
     <dependency>
       <groupId>org.apache.hbase</groupId>
       <artifactId>hbase-common</artifactId>
-      <version>1.3.6</version>
+      <version>${hbase.version}</version>
       <scope>compile</scope>
       <exclusions>
         <exclusion>
@@ -349,7 +398,7 @@
     <dependency>
       <groupId>org.apache.hbase</groupId>
       <artifactId>hbase-server</artifactId>
-      <version>1.3.6</version>
+      <version>${hbase.version}</version>
       <scope>compile</scope>
       <exclusions>
         <exclusion>
@@ -382,37 +431,37 @@
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
-      <version>2.5.0</version>
+      <version>${protobuf.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.github.jsqlparser</groupId>
       <artifactId>jsqlparser</artifactId>
-      <version>3.1</version>
+      <version>${jsqlparser.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.redislabs</groupId>
       <artifactId>spark-redis_2.11</artifactId>
-      <version>2.4.2</version>
+      <version>${spark-redis.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.datastax.spark</groupId>
       <artifactId>spark-cassandra-connector_2.11</artifactId>
-      <version>2.4.3</version>
+      <version>${spark-cassandra.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.springml</groupId>
       <artifactId>sftp.client</artifactId>
-      <version>1.0.3</version>
+      <version>${sftp.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.kudu</groupId>
       <artifactId>kudu-spark2_2.11</artifactId>
-      <version>1.11.1</version>
+      <version>${kudu.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -431,7 +480,7 @@
     <dependency>
       <groupId>org.apache.hudi</groupId>
       <artifactId>hudi-spark-bundle_2.11</artifactId>
-      <version>0.10.1</version>
+      <version>${hudi-spark.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -443,19 +492,19 @@
     <dependency>
       <groupId>com.github.housepower</groupId>
       <artifactId>clickhouse-native-jdbc</artifactId>
-      <version>2.1-stable</version>
+      <version>${clickhouse-native-jdbc.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.kie</groupId>
       <artifactId>kie-api</artifactId>
-      <version>7.40.0.Final</version>
+      <version>${drools.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.drools</groupId>
       <artifactId>drools-compiler</artifactId>
-      <version>7.40.0.Final</version>
+      <version>${drools.version}</version>
       <scope>compile</scope>
       <exclusions>
         <exclusion>
@@ -467,13 +516,13 @@
     <dependency>
       <groupId>org.drools</groupId>
       <artifactId>drools-core</artifactId>
-      <version>7.40.0.Final</version>
+      <version>${drools.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.github.shyiko</groupId>
       <artifactId>mysql-binlog-connector-java</artifactId>
-      <version>0.21.0</version>
+      <version>${mysql-binlog-connector-java.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -485,31 +534,31 @@
     <dependency>
       <groupId>org.mariadb.jdbc</groupId>
       <artifactId>mariadb-java-client</artifactId>
-      <version>2.6.2</version>
+      <version>${mariadb-java-client.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.facebook.presto</groupId>
       <artifactId>presto-jdbc</artifactId>
-      <version>0.240</version>
+      <version>${presto-jdbc.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>42.2.25</version>
+      <version>${postgresql.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.kylin</groupId>
       <artifactId>kylin-jdbc</artifactId>
-      <version>3.0.2</version>
+      <version>${kylin-jdbc.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.iceberg</groupId>
       <artifactId>iceberg-spark</artifactId>
-      <version>0.11.1</version>
+      <version>${iceberg-spark.version}</version>
       <scope>compile</scope>
       <exclusions>
         <exclusion>
@@ -525,7 +574,7 @@
     <dependency>
       <groupId>org.apache.iceberg</groupId>
       <artifactId>iceberg-spark-runtime</artifactId>
-      <version>0.11.1</version>
+      <version>${iceberg-spark.version}</version>
       <scope>compile</scope>
       <exclusions>
         <exclusion>
@@ -541,13 +590,13 @@
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_2.11</artifactId>
-      <version>3.0.5</version>
+      <version>${scalatest_2.11.version}</version>
      <!-- <scope>test</scope>-->
     </dependency>
     <dependency>
       <groupId>org.scala-lang.modules</groupId>
       <artifactId>scala-xml_2.11</artifactId>
-      <version>1.1.0</version>
+      <version>${scala-xml_2.11.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -559,14 +608,14 @@
     <dependency>
       <groupId>org.pegdown</groupId>
       <artifactId>pegdown</artifactId>
-      <version>1.4.2</version>
+      <version>${pegdown.version}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.log4mongo</groupId>
       <artifactId>log4mongo-java</artifactId>
-      <version>0.9.0</version>
+      <version>${log4mongo-java.version}</version>
     </dependency>
 
   </dependencies>

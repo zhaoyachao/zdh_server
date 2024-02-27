@@ -59,4 +59,5 @@
     spark.sql.extensions org.apache.spark.sql.TiExtensions
     
 # 版本更新说明
-   + v5.1.1 修复http数据源    
+   + v5.1.1 修复http数据源
+   + v5.3.0 优化pom文件    
