@@ -2,59 +2,62 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.zyc</groupId>
   <artifactId>zdh_spark</artifactId>
-  <version>5.3.0-RELEASE</version>
+  <version>5.3.4-RELEASE</version>
   <inceptionYear>2022</inceptionYear>
   <properties>
-    <scala.version>2.11.12</scala.version>
-    <spark.version>2.4.4</spark.version>
+      <scala.version>2.11.12</scala.version>
+      <spark.version>2.4.4</spark.version>
 
-    <ojdbc6.version>11.2</ojdbc6.version>
-    <terajdbc4.version>16.10.00.05</terajdbc4.version>
-    <tdgssconfig.version>16.00.00.01</tdgssconfig.version>
-    <kingbasejdbc3.version>7.1.2.0711</kingbasejdbc3.version>
-    <gbase.version>8.3.81.53-build52.8</gbase.version>
-    <redshift-jdbc42.version>1.2.41.1067</redshift-jdbc42.version>
-    <greenplum-jdbc.version>5.1.4</greenplum-jdbc.version>
-    <junit.version>4.4</junit.version>
-    <specs.version>1.2.5</specs.version>
-    <jackson.version>2.11.2</jackson.version>
-    <fastjson.version>1.2.47</fastjson.version>
-    <gson.version>2.8.2</gson.version>
-    <commons-compiler.version>3.0.8</commons-compiler.version>
-    <hive-jdbc.version>1.2.1</hive-jdbc.version>
-    <spark-excel.version>0.13.1</spark-excel.version>
-    <spark-xml.version>0.9.0</spark-xml.version>
-    <elasticsearch.version>7.6.0</elasticsearch.version>
-    <mongo-spark.version>2.4.1</mongo-spark.version>
-    <mongo-java-driver.version>3.12.2</mongo-java-driver.version>
-    <netty.version>4.1.23.Final</netty.version>
-    <json4s.version>3.5.4</json4s.version>
-    <config.version>1.3.2</config.version>
-    <httpclient.version>4.5.5</httpclient.version>
-    <commons-email.version>1.2</commons-email.version>
-    <poi.version>4.0.1</poi.version>
-    <mysql.version>8.0.11</mysql.version>
-    <delta.version>0.5.0</delta.version>
-    <hbase.version>1.3.6</hbase.version>
-    <protobuf.version>2.5.0</protobuf.version>
-    <jsqlparser.version>3.1</jsqlparser.version>
-    <spark-redis.version>2.4.2</spark-redis.version>
-    <spark-cassandra.version>2.4.3</spark-cassandra.version>
-    <sftp.version>1.0.3</sftp.version>
-    <kudu.version>1.11.1</kudu.version>
-    <hudi-spark.version>0.10.1</hudi-spark.version>
-    <clickhouse-native-jdbc.version>2.1-stable</clickhouse-native-jdbc.version>
-    <drools.version>7.40.0.Final</drools.version>
-    <mysql-binlog-connector-java.version>0.21.0</mysql-binlog-connector-java.version>
-    <mariadb-java-client.version>2.6.2</mariadb-java-client.version>
-    <presto-jdbc.version>0.240</presto-jdbc.version>
-    <postgresql.version>42.2.25</postgresql.version>
-    <kylin-jdbc.version>3.0.2</kylin-jdbc.version>
-    <iceberg-spark.version>0.11.1</iceberg-spark.version>
-    <scalatest_2.11.version>3.0.5</scalatest_2.11.version>
-    <scala-xml_2.11.version>1.1.0</scala-xml_2.11.version>
-    <pegdown.version>1.4.2</pegdown.version>
-    <log4mongo-java.version>0.9.0</log4mongo-java.version>
+      <ojdbc6.version>11.2</ojdbc6.version>
+      <terajdbc4.version>16.10.00.05</terajdbc4.version>
+      <tdgssconfig.version>16.00.00.01</tdgssconfig.version>
+      <kingbasejdbc3.version>7.1.2.0711</kingbasejdbc3.version>
+      <gbase.version>8.3.81.53-build52.8</gbase.version>
+      <redshift-jdbc42.version>1.2.41.1067</redshift-jdbc42.version>
+      <greenplum-jdbc.version>5.1.4</greenplum-jdbc.version>
+      <junit.version>4.4</junit.version>
+      <specs.version>1.2.5</specs.version>
+      <jackson.version>2.11.2</jackson.version>
+      <fastjson.version>1.2.47</fastjson.version>
+      <gson.version>2.8.2</gson.version>
+      <commons-compiler.version>3.0.8</commons-compiler.version>
+      <hive-jdbc.version>1.2.1</hive-jdbc.version>
+      <spark-excel.version>0.13.1</spark-excel.version>
+      <spark-xml.version>0.9.0</spark-xml.version>
+      <elasticsearch.version>7.6.0</elasticsearch.version>
+      <mongo-spark.version>2.4.1</mongo-spark.version>
+      <mongo-java-driver.version>3.12.2</mongo-java-driver.version>
+      <netty.version>4.1.23.Final</netty.version>
+      <json4s.version>3.5.4</json4s.version>
+      <config.version>1.3.2</config.version>
+      <httpclient.version>4.5.5</httpclient.version>
+      <commons-email.version>1.2</commons-email.version>
+      <poi.version>4.0.1</poi.version>
+      <mysql.version>8.0.11</mysql.version>
+      <delta.version>0.5.0</delta.version>
+      <hbase.version>1.3.6</hbase.version>
+      <protobuf.version>2.5.0</protobuf.version>
+      <jsqlparser.version>3.1</jsqlparser.version>
+      <spark-redis.version>2.4.2</spark-redis.version>
+      <spark-cassandra.version>2.4.3</spark-cassandra.version>
+      <sftp.version>1.0.3</sftp.version>
+      <kudu.version>1.11.1</kudu.version>
+      <hudi-spark.version>0.10.1</hudi-spark.version>
+      <clickhouse-native-jdbc.version>2.1-stable</clickhouse-native-jdbc.version>
+      <drools.version>7.40.0.Final</drools.version>
+      <mysql-binlog-connector-java.version>0.21.0</mysql-binlog-connector-java.version>
+      <mariadb-java-client.version>2.6.2</mariadb-java-client.version>
+      <presto-jdbc.version>0.240</presto-jdbc.version>
+      <postgresql.version>42.2.25</postgresql.version>
+      <kylin-jdbc.version>3.0.2</kylin-jdbc.version>
+      <iceberg-spark.version>0.11.1</iceberg-spark.version>
+      <scalatest_2.11.version>3.0.5</scalatest_2.11.version>
+      <scala-xml_2.11.version>1.1.0</scala-xml_2.11.version>
+      <pegdown.version>1.4.2</pegdown.version>
+      <log4mongo-java.version>0.9.0</log4mongo-java.version>
+      <zdh_rqueue.version>1.0-SNAPSHOT</zdh_rqueue.version>
+      <redisson.version>3.22.0</redisson.version>
+      <hutool-all.version>4.4.5</hutool-all.version>
   </properties>
 
   <repositories>
@@ -616,6 +619,26 @@
       <groupId>org.log4mongo</groupId>
       <artifactId>log4mongo-java</artifactId>
       <version>${log4mongo-java.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.zyc</groupId>
+      <artifactId>rqueue</artifactId>
+      <version>${zdh_rqueue.version}</version>
+      <scope>system</scope>
+      <systemPath>${basedir}/libs/zdh_rqueue.jar</systemPath>
+    </dependency>
+
+    <dependency>
+      <groupId>org.redisson</groupId>
+      <artifactId>redisson</artifactId>
+      <version>${redisson.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>cn.hutool</groupId>
+      <artifactId>hutool-all</artifactId>
+      <version>${hutool-all.version}</version>
     </dependency>
 
   </dependencies>

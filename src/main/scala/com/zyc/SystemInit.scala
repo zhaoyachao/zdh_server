@@ -1,9 +1,13 @@
 package com.zyc
 
-import com.typesafe.config.ConfigFactory
-import com.zyc.base.util.HttpUtil
-import com.zyc.common.{HACommon, MariadbCommon, ServerSparkListener, SparkBuilder}
+import java.util.concurrent.{LinkedBlockingQueue, ThreadPoolExecutor, TimeUnit}
+
+import com.typesafe.config.{Config, ConfigFactory}
+import com.zyc.base.util.{HttpUtil, JsonUtil}
+import com.zyc.common.{MariadbCommon, ServerSparkListener, SparkBuilder}
 import com.zyc.netty.NettyServer
+import com.zyc.rqueue.{RQueueManager, RQueueMode}
+import com.zyc.zdh.ZdhHandler
 import org.apache.log4j.MDC
 import org.slf4j.LoggerFactory
 
@@ -12,6 +16,14 @@ object SystemInit {
   val logger = LoggerFactory.getLogger(this.getClass)
   //心跳检测路径
   val keeplive_url="/api/v1/zdh/keeplive"
+
+  private val threadpool = new ThreadPoolExecutor(
+    1, // core pool size
+    1, // max pool size
+    500, // keep alive time
+    TimeUnit.MILLISECONDS,
+    new LinkedBlockingQueue[Runnable]()
+  )
 
   def main(args: Array[String]): Unit = {
     MDC.put("job_id", "001")
@@ -22,6 +34,8 @@ object SystemInit {
     val time_interval = configLoader.getString("time_interval").toLong
     val spark_history_server = configLoader.getString("spark_history_server")
     val online = configLoader.getString("online")
+
+    initRQueue(configLoader)
 
     logger.info("开始初始化SparkSession")
     val spark = SparkBuilder.getSparkSession()
@@ -39,6 +53,8 @@ object SystemInit {
       new Thread(new Runnable {
         override def run(): Unit = new NettyServer().start()
       }).start()
+
+      consumer(configLoader)
 
       while (true){
         val list=MariadbCommon.getZdhHaInfo()
@@ -93,7 +109,75 @@ object SystemInit {
       MariadbCommon.delZdhHaInfo("enabled",host, port)
     }
 
+  }
 
+  def initRQueue(config: Config): Unit = {
+    val url = config.getString("redis.url")
+    val auth = config.getString("redis.password")
+    RQueueManager.buildDefault(url, auth)
+  }
+
+  def consumer(config: Config): Unit ={
+
+    val queue_pre = config.getString("queue.pre_key")
+    val instance = config.getString("instance")
+    val queue = queue_pre + "_" + instance
+    logger.info("加载当前queue: "+queue)
+    threadpool.execute(new Runnable {
+      override def run(): Unit = {
+
+        //延迟启动30s
+        Thread.sleep(1000*30)
+        while(true){
+          import util.control.Breaks._
+          breakable {
+            var rqueueClient = RQueueManager.getRQueueClient(queue, RQueueMode.BLOCKQUEUE)
+            var o = rqueueClient.poll()
+            if(o == null){
+              break()
+            }
+
+            val param:Map[String, Any] = JsonUtil.jsonToMap(o.toString)
+            val dispatchOptions = param.getOrElse("tli", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
+            val dispatch_task_id = dispatchOptions.getOrElse("job_id", "001").toString
+            val task_logs_id=param.getOrElse("task_logs_id", "001").toString
+            val etl_date = JsonUtil.jsonToMap(dispatchOptions.getOrElse("params", "").toString).getOrElse("ETL_DATE", "").toString
+            MariadbCommon.updateTaskStatus(task_logs_id, dispatch_task_id, "etl", etl_date, "22")
+
+            try{
+              //消费队列,调用
+              val more_task = dispatchOptions.getOrElse("more_task", "")
+              if(more_task.equals("单源ETL")){
+                ZdhHandler.etl(param)
+              }else if(more_task.equals("多源ETL")){
+                ZdhHandler.moreEtl(param)
+              }else if(more_task.toString.toUpperCase.equals("QUALITY")){
+                ZdhHandler.quality(param)
+              }else if(more_task.toString.toUpperCase.equals("APPLY")){
+                ZdhHandler.apply(param)
+              }else if(more_task.toString.toUpperCase.equals("DROOLS")){
+                ZdhHandler.droolsEtl(param)
+              }else if(more_task.toString.toUpperCase.equals("SQL")){
+                ZdhHandler.sqlEtl(param)
+              }else{
+                throw new Exception("未知的more_task: "+more_task)
+              }
+
+            }catch {
+              case ex:Exception=>{
+                logger.error("[数据采集]:[consumer]:[ERROR]:" + ex.getMessage, ex.getCause)
+                MariadbCommon.updateTaskStatus2(task_logs_id,dispatch_task_id,dispatchOptions,etl_date)
+              }
+            }
+
+          }
+
+
+
+        }
+
+      }
+    })
   }
 
 
