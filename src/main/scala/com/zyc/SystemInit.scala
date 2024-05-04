@@ -147,9 +147,9 @@ object SystemInit {
             try{
               //消费队列,调用
               val more_task = dispatchOptions.getOrElse("more_task", "")
-              if(more_task.equals("单源ETL")){
+              if(more_task.equals("ETL")){
                 ZdhHandler.etl(param)
-              }else if(more_task.equals("多源ETL")){
+              }else if(more_task.equals("MORE_ETL")){
                 ZdhHandler.moreEtl(param)
               }else if(more_task.toString.toUpperCase.equals("QUALITY")){
                 ZdhHandler.quality(param)

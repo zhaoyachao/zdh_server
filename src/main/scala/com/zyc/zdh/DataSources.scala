@@ -389,7 +389,7 @@ object DataSources extends Serializable{
 
       var ds:DataFrame=null
       spark_tmp.conf.set(SPARK_ZDH_PROCESS,"INPUT")
-      if(etlDroolsTaskInfo.getOrElse("more_task","").toString.equalsIgnoreCase("单源ETL")){
+      if(etlDroolsTaskInfo.getOrElse("more_task","").toString.equalsIgnoreCase("ETL")){
         //调用读取数据源
         //输入数据源信息
         val dsi_Input = dsi_EtlInfo(0).getOrElse("dsi_Input", Map.empty[String, Any]).asInstanceOf[Map[String, Any]]
@@ -416,7 +416,7 @@ object DataSources extends Serializable{
           throw new Exception("Drools任务对应的单源任务 不支持流数据kafka,flume")
         }
         ds = inPutHandler(spark_tmp, task_logs_id, dispatchOption, etlTaskInfo, inPut, dsi_Input ++ inputOptions, filter, inputCols, null, null, outPutCols_tmp, null)
-      }else if(etlDroolsTaskInfo.getOrElse("more_task","").toString.equalsIgnoreCase("多源ETL")){
+      }else if(etlDroolsTaskInfo.getOrElse("more_task","").toString.equalsIgnoreCase("MORE_ETL")){
         ds=DataHandlerMore2(spark_tmp,task_logs_id,dispatchOption,dsi_EtlInfo,etlMoreTaskInfo,"")(dispatch_task_id)
       }else if(etlDroolsTaskInfo.getOrElse("more_task","").toString.equalsIgnoreCase("SQL")){
         val inputOptions: Map[String, Any] = sqlTaskInfo.getOrElse("data_sources_params_input", "").toString.trim match {
