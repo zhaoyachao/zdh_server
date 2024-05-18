@@ -40,3 +40,6 @@ quick.bat
 
 *-RELEASE/
 *-RELEASE.tar
+
+derby.log
+metastore_db

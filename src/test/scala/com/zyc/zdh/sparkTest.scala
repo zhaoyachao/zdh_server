@@ -608,4 +608,11 @@ re.show(false)
       Thread.sleep(10000)
     }
   }
+
+  @Test
+  def testAddJar(): Unit ={
+    //后期 使用自定义函数可通过add jar方式增加
+    spark.sql("add jar /代码库/zdh_spark/libs/zdh_rqueue.jar")
+
+  }
 }
