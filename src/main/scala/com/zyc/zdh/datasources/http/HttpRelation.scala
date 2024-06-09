@@ -107,12 +107,21 @@ case class HttpRelation(
     val builder=new URIBuilder(addr)
     if(param.nonEmpty){
       param.foreach(r=>{
-        builder.addParameter(r._1,r._2)
+        if(!r._1.startsWith("header.")){
+          builder.addParameter(r._1,r._2)
+        }
       })
     }
     val client=HttpClient()
-
-    val httpResponse = client.execute(new HttpGet(builder.build()))
+    val httpGet = new HttpGet(builder.build())
+    if(param.nonEmpty){
+      param.foreach(r=>{
+        if(r._1.startsWith("header.")){
+          httpGet.setHeader(r._1.substring(7),r._2)
+        }
+      })
+    }
+    val httpResponse = client.execute(httpGet)
     val entity = httpResponse.getEntity()
     var content = ""
     if (entity != null) {
@@ -126,12 +135,21 @@ case class HttpRelation(
     val builder=new URIBuilder(addr)
     if(param.nonEmpty){
       param.foreach(r=>{
-        builder.addParameter(r._1,r._2)
+        if(!r._1.startsWith("header.")){
+          builder.addParameter(r._1,r._2)
+        }
       })
     }
     val client=HttpClient()
-
-    val httpResponse = client.execute(new HttpPut(builder.build()))
+    val httpPut = new HttpPut(builder.build())
+    if(param.nonEmpty){
+      param.foreach(r=>{
+        if(r._1.startsWith("header.")){
+          httpPut.setHeader(r._1.substring(7),r._2)
+        }
+      })
+    }
+    val httpResponse = client.execute(httpPut)
     val entity = httpResponse.getEntity()
     var content = ""
     if (entity != null) {
@@ -145,12 +163,21 @@ case class HttpRelation(
     val builder=new URIBuilder(addr)
     if(param.nonEmpty){
       param.foreach(r=>{
-        builder.addParameter(r._1,r._2)
+        if(!r._1.startsWith("header.")){
+          builder.addParameter(r._1,r._2)
+        }
       })
     }
     val client=HttpClient()
-
-    val httpResponse = client.execute(new HttpDelete(builder.build()))
+    val httpDelete = new HttpDelete(builder.build())
+    if(param.nonEmpty){
+      param.foreach(r=>{
+        if(r._1.startsWith("header.")){
+          httpDelete.setHeader(r._1.substring(7),r._2)
+        }
+      })
+    }
+    val httpResponse = client.execute(httpDelete)
     val entity = httpResponse.getEntity()
     var content = ""
     if (entity != null) {
@@ -170,6 +197,15 @@ case class HttpRelation(
     val entity = new StringEntity(write(param.toMap))
     req.setEntity(entity)
     val client=HttpClient()
+
+    if(param.nonEmpty){
+      param.foreach(r=>{
+        if(r._1.startsWith("header.")){
+          req.setHeader(r._1.substring(7),r._2)
+        }
+      })
+    }
+
     val httpResponse = client.execute(req)
     val resEntity = httpResponse.getEntity()
     var content = ""
@@ -179,22 +215,6 @@ case class HttpRelation(
     client.close()
     content
   }
-
-  def  postJson(addr:String,json:String):String={
-    val req=new HttpPost(addr)
-    val entity=new StringEntity(json,"utf-8")
-    req.setEntity(entity)
-    val client=HttpClient()
-    val httpResponse = client.execute(req)
-    val resEntity = httpResponse.getEntity()
-    var content = ""
-    if (resEntity != null) {
-      content=EntityUtils.toString(resEntity)
-    }
-    client.close()
-    content
-  }
-
 
 }
 

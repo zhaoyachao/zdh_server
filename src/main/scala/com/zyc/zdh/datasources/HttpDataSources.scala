@@ -23,6 +23,8 @@ object HttpDataSources extends ZdhDataSources {
      if (paths.trim.equals("")) {
        throw new Exception("[zdh],http数据源读取:paths为空")
      }
+
+
      var df=spark.read.format(http_source)
        .options(inputOptions)
        .option("url",url)
