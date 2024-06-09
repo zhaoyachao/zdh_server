@@ -109,12 +109,13 @@ object KafKaDataSources extends ZdhDataSources {
     val multiline = options.getOrElse("multiline", "false")
 
 
-    val kafkaParams = Map[String, Object](
+    var kafkaParams = Map[String, Object](
       ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG -> brokers,
       ConsumerConfig.GROUP_ID_CONFIG -> groupId,
       ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG -> classOf[StringDeserializer],
       ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG -> classOf[StringDeserializer])
 
+    kafkaParams = options ++ kafkaParams
 
     //设置每个分区起始的Offset
     import scala.collection.JavaConverters._
@@ -201,12 +202,13 @@ object KafKaDataSources extends ZdhDataSources {
     val multiline = options.getOrElse("multiline", "false")
 
 
-    val kafkaParams = Map[String, Object](
+    var kafkaParams = Map[String, Object](
       ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG -> brokers,
       ConsumerConfig.GROUP_ID_CONFIG -> groupId,
       ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG -> classOf[StringDeserializer],
       ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG -> classOf[StringDeserializer])
 
+    kafkaParams = options ++ kafkaParams
 
     val messages = KafkaUtils.createDirectStream[String, String](
       ssc,
