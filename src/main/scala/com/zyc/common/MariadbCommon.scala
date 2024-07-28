@@ -580,7 +580,7 @@ object MariadbCommon {
       true
     } catch {
       case ex: Exception => {
-        logger.error("连接airflow时出现错误", ex.getCause)
+        logger.error("连接数据库时出现错误", ex.getCause)
         throw ex
       }
     }
