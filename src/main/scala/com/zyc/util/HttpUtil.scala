@@ -39,7 +39,6 @@ object HttpUtil {
       })
     }
     val client=HttpClient()
-    println(builder.build().toString)
     val httpResponse = client.execute(new HttpGet(builder.build()))
     val entity = httpResponse.getEntity()
     var content = ""

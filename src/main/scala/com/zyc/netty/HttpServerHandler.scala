@@ -162,8 +162,11 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter with HttpBaseHandle
 
   }
 
-  private def getBody(content: String): Map[String, Any] = {
-    JsonUtil.jsonToMap(content)
+  private def getBody(uri: String, content: String): Map[String, Any] = {
+    val postMap = JsonUtil.jsonToMap(content)
+    val getMap = getParam(uri)
+    val mergedMap = getMap ++ postMap
+    return mergedMap
   }
 
   private def getParam(uri: String): Map[String, Any] = {
@@ -178,7 +181,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter with HttpBaseHandle
   private def getReqContent(request: FullHttpRequest): Map[String, Any] = {
     request.method() match {
       case HttpMethod.GET => getParam(request.uri())
-      case HttpMethod.POST => getBody(request.content.toString(CharsetUtil.UTF_8))
+      case HttpMethod.POST => getBody(request.uri(), request.content.toString(CharsetUtil.UTF_8))
     }
   }
 
