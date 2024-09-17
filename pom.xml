@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.zyc</groupId>
   <artifactId>zdh_spark</artifactId>
-  <version>5.5.2-RELEASE</version>
+  <version>5.5.3-RELEASE</version>
   <inceptionYear>2022</inceptionYear>
   <properties>
       <scala.version>2.11.12</scala.version>
