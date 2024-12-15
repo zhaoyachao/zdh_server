@@ -13,7 +13,7 @@
       <tdgssconfig.version>16.00.00.01</tdgssconfig.version>
       <kingbasejdbc3.version>7.1.2.0711</kingbasejdbc3.version>
       <gbase.version>8.3.81.53-build52.8</gbase.version>
-      <redshift-jdbc42.version>1.2.41.1067</redshift-jdbc42.version>
+      <redshift-jdbc42.version>1.2.43.1067</redshift-jdbc42.version>
       <greenplum-jdbc.version>5.1.4</greenplum-jdbc.version>
       <junit.version>4.4</junit.version>
       <specs.version>1.2.5</specs.version>
@@ -58,6 +58,7 @@
       <zdh_rqueue.version>1.0-SNAPSHOT</zdh_rqueue.version>
       <redisson.version>3.22.0</redisson.version>
       <hutool-all.version>4.4.5</hutool-all.version>
+      <aws-java-sdk.version>1.7.4</aws-java-sdk.version>
   </properties>
 
   <repositories>
@@ -129,12 +130,15 @@
       <systemPath>${basedir}/libs/gbase-connector-java-8.3.81.53-build52.8-bin.jar</systemPath>
     </dependency>
 
+<!--    redshit和hadoop-aw 冲突,因此采用不包含sdk的包-->
+<!--    https://mvnrepository.com/artifact/com.amazon.redshift/redshift-jdbc42-no-awssdk/1.2.43.1067-->
     <dependency>
       <groupId>com.amazon.redshift</groupId>
-      <artifactId>redshift-jdbc42</artifactId>
+      <artifactId>redshift-jdbc42-no-awssdk</artifactId>
       <version>${redshift-jdbc42.version}</version>
       <scope>system</scope>
-      <systemPath>${basedir}/libs/redshift-jdbc42-1.2.43.1067.jar</systemPath>
+<!--      <systemPath>${basedir}/libs/redshift-jdbc42-1.2.43.1067.jar</systemPath>-->
+      <systemPath>${basedir}/libs/redshift-jdbc42-no-awssdk-1.2.43.1067.jar</systemPath>
     </dependency>
 
     <dependency>
@@ -640,6 +644,34 @@
       <artifactId>hutool-all</artifactId>
       <version>${hutool-all.version}</version>
     </dependency>
+
+<!--    读写minio-->
+<!--    <dependency>-->
+<!--      <groupId>org.apache.hadoop</groupId>-->
+<!--      <artifactId>hadoop-aws</artifactId>-->
+<!--      <version>2.7.5</version>-->
+<!--      <exclusions>-->
+<!--        <exclusion>-->
+<!--          <artifactId>com.amazonaws</artifactId>-->
+<!--          <groupId>aws-java-sdk</groupId>-->
+<!--        </exclusion>-->
+<!--      </exclusions>-->
+<!--    </dependency>-->
+
+    <!-- https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk -->
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk</artifactId>
+      <version>${aws-java-sdk.version}</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/software.amazon.awssdk/s3 -->
+<!--    <dependency>-->
+<!--      <groupId>software.amazon.awssdk</groupId>-->
+<!--      <artifactId>s3</artifactId>-->
+<!--      <version>2.29.33</version>-->
+<!--    </dependency>-->
+
 
   </dependencies>
 
