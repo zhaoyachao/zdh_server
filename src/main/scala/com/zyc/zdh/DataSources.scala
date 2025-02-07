@@ -789,7 +789,7 @@ object DataSources extends Serializable{
 
     logger.info("[数据采集]:[输入]:开始匹配输入数据源")
 
-    val etl_date = JsonUtil.jsonToMap(dispatchOption.getOrElse("params", "").toString).getOrElse("ETL_DATE", "").toString;
+    val etl_date = JsonUtil.jsonToMap(dispatchOption.getOrElse("params", "").toString).getOrElse("ETL_DATE", "").toString
     val etl_task_id = etlTaskInfo.getOrElse("id", "001").toString
     val context = etlTaskInfo.getOrElse("etl_context", "").toString
     val job_context = dispatchOption.getOrElse("job_context", "").toString

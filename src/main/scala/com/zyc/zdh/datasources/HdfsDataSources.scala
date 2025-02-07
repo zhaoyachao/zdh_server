@@ -1,13 +1,14 @@
 package com.zyc.zdh.datasources
 
-import java.io.{BufferedWriter, OutputStreamWriter}
+import java.io.{BufferedWriter, File, OutputStreamWriter}
 import java.net.URI
+import java.security.PrivilegedExceptionAction
 
 import com.zyc.zdh.ZdhDataSources
-import oracle.net.aso.e
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
 import org.apache.hadoop.hdfs.server.namenode.ha.proto.HAZKInfoProtos
+import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hudi.DataSourceWriteOptions
 import org.apache.hudi.config.HoodieWriteConfig
 import org.apache.spark.sql.functions._
@@ -47,6 +48,10 @@ object HdfsDataSources extends ZdhDataSources {
       throw new Exception("[zdh],hdfs数据源读取:路径必须是绝对路径,以/开头")
     }
 
+    val user: String = inputOptions.getOrElse("user", "").toString
+    if(user.trim.equals("")){
+      throw new Exception("[zdh],hdfs数据源读取:user为空")
+    }
     val sep = inputOptions.getOrElse("sep", ",").toString
 
     var hdfs = inputOptions.getOrElse("url", "")
@@ -76,16 +81,38 @@ object HdfsDataSources extends ZdhDataSources {
     try {
       logger.info("[数据采集]:[HDFS]:匹配文件格式")
 
-      options.getOrElse("fileType", "csv").toString.toLowerCase match {
-        case "csv" => csv(spark, paths, sep, options, cols, inputCondition)
-        case "orc" => orc(spark, paths, options, cols, inputCondition)
-        case "paquet" => parquet(spark, paths, options, cols, inputCondition)
-        case "json" => json(spark, paths, options, cols, inputCondition)
-        case "excel" => excel(spark, paths, options, cols, inputCondition)
-        case "delta"=>delta(spark, paths, options, cols, inputCondition)
-        case "hudi" => hudi(spark, paths, options, cols, inputCondition)
-        case _ => other(spark, paths, sep, options, cols, inputCondition)
+      val user: String = options.getOrElse("user", "").toString
+      val password: String = options.getOrElse("password", "").toString
+
+      var ugi = UserGroupInformation.createRemoteUser(user)
+      if(options.getOrElse("driver", "").equalsIgnoreCase("kerberos")){
+        val conf = new Configuration()
+        // 设置关联的keytab和主体名
+        conf.set("hadoop.security.authentication", "Kerberos")
+        UserGroupInformation.setConfiguration(conf)
+
+        val keytabFilePath = password.split(";")(1)
+        val principal = password.split(";")(0)
+        ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(principal, keytabFilePath)
       }
+
+
+      ugi.doAs(
+        new PrivilegedExceptionAction[DataFrame]{
+          override def run(): DataFrame = {
+            options.getOrElse("fileType", "csv").toString.toLowerCase match {
+              case "csv" => csv(spark, paths, sep, options, cols, inputCondition)
+              case "orc" => orc(spark, paths, options, cols, inputCondition)
+              case "paquet" => parquet(spark, paths, options, cols, inputCondition)
+              case "json" => json(spark, paths, options, cols, inputCondition)
+              case "excel" => excel(spark, paths, options, cols, inputCondition)
+              case "delta"=>delta(spark, paths, options, cols, inputCondition)
+              case "hudi" => hudi(spark, paths, options, cols, inputCondition)
+              case _ => other(spark, paths, sep, options, cols, inputCondition)
+            }
+          }
+        }
+      )
     } catch {
       case ex: Exception => {
         ex.printStackTrace()
@@ -119,6 +146,8 @@ object HdfsDataSources extends ZdhDataSources {
     var ds: DataFrame = null
     if (sep.size == 1 && options.getOrElse("header", "false").equalsIgnoreCase("true")) {
       ds = spark.read.format("csv").options(options).option("sep", sep).load(paths)
+    } else if(sep.equalsIgnoreCase("\\t")){
+      ds = spark.read.format("csv").options(options).option("sep", "\t").load(paths)
     } else {
       logger.info("[数据采集]:[HDFS]:[CSV]:[READ]:分割符为多位" + sep + ",如果是以下符号会自动转义( )*+ -/ [ ] { } ? ^ | .")
       if (cols == null || cols.isEmpty) {
@@ -335,6 +364,12 @@ object HdfsDataSources extends ZdhDataSources {
     if (!outputPath.startsWith("/")) {
       throw new Exception("数据采集最终输出的路径必须是以/开头的绝对路径")
     }
+
+    val user: String = options.getOrElse("user", "").toString
+    if(user.trim.equals("")){
+      throw new Exception("[zdh],hdfs数据源写入:user为空")
+    }
+
     var hdfs = options.getOrElse("url", "").toString
 
     if (hdfs.contains(",")) {
@@ -353,8 +388,12 @@ object HdfsDataSources extends ZdhDataSources {
     var df_tmp = merge(spark,df,options)
 
     if(fileType.equalsIgnoreCase("csv")){
-     val sep= options.getOrElse("sep",",")
-      if(sep.length>1){
+     var sep= options.getOrElse("sep",",")
+      if(sep.equalsIgnoreCase("\\t")){
+        sep = "\t"
+        options_tmp=options.+("sep"->"\t", "header"->options.getOrElse("header","true"))
+      }
+      if(sep.length>1 && !sep.equalsIgnoreCase("\t") && !sep.equalsIgnoreCase("    ")){
         logger.info("[数据采集]:[HDFS]:[WRITE]:写入文件为csv,并且分割符为多分割符,分割符:"+sep)
         val columns=df_tmp.columns
         var col_name=columns.mkString(sep)
@@ -389,6 +428,7 @@ object HdfsDataSources extends ZdhDataSources {
       if (outPut.toLowerCase.equals("xml")) {
         format = "com.databricks.spark.xml"
       }
+
       if(outPut.equalsIgnoreCase("hudi")){
         val basePath=path.substring(0,path.lastIndexOf("/"))
         val tableName=path.substring(path.lastIndexOf("/")+1)
@@ -412,20 +452,87 @@ object HdfsDataSources extends ZdhDataSources {
         logger.info("[数据采集]:[HDFS]:[WRITE]:[HUDI]:"+ "[options]:" + options_tmp.mkString(",")+",[path]:"+path_tmp)
       }
 
-      if(options_tmp.getOrElse("is_single",false).equals(true) && (outPut.equalsIgnoreCase("csv") || outPut.equalsIgnoreCase("text")) && model.name().equalsIgnoreCase("overwrite")){
+      val user: String = options.getOrElse("user", "").toString
+      val password: String = options.getOrElse("password", "").toString
 
-        df.foreachPartition(rows=>{
-          val hdfsWrite=new HdfsWrite()
-          hdfsWrite.openHdfsFile(path_tmp)
-          rows.foreach(row=>{
-            hdfsWrite.writeString(row.getAs[String](cols(0)))
-          })
-          hdfsWrite.closeHdfsFile()
-        })
+      var ugi = UserGroupInformation.createRemoteUser(user)
+      if(options.getOrElse("driver", "").equalsIgnoreCase("kerberos")){
+        val conf = new Configuration()
+        // 设置关联的keytab和主体名
+        conf.set("hadoop.security.authentication", "Kerberos")
+        UserGroupInformation.setConfiguration(conf)
+
+        val keytabFilePath = password.split(";")(1)
+        val principal = password.split(";")(0)
+        ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(principal, keytabFilePath)
+      }
+
+      if(options_tmp.getOrElse("is_single",false).equals(true)){
+
+        if(!model.name().equalsIgnoreCase("overwrite")){
+          throw new Exception("[数据采集]:[HDFS]:[WRITE]:[ERROR]:写入单个文件时,写入模式必须选择覆盖模式")
+        }
+        if (!partitionBy.equals("")){
+          throw new Exception("[数据采集]:[HDFS]:[WRITE]:[ERROR]:写入单个文件时,不支持分区字段配置")
+        }
+        val src_path = path_tmp+"_single_dir"
+        val dest_path = new Path(path_tmp)
+        val dest_dir = dest_path.getParent.toString
+        val file_name = dest_path.getName
+
+        var file_type = outPut.toLowerCase
+        if(file_type.equalsIgnoreCase("excel")){
+          file_type = "xlsx"
+          if(file_name.endsWith("xlsx")){
+            file_type = "xlsx"
+          }else if(file_name.endsWith("xls")){
+            file_type = "xls"
+          }
+        }
+
+        ugi.doAs(
+          new PrivilegedExceptionAction[Unit]{
+            override def run(): Unit = {
+              df.repartition(1).write.format(format).mode(model).options(options_tmp).save(src_path)
+              val hadoopConfig = new Configuration()
+              val hdfs = FileSystem.get(hadoopConfig)
+
+              val src_file = FileUtil.listFiles(new File(src_path)).filter(f=>f.getPath.endsWith("."+file_type))(0)
+              hdfs.delete(dest_path, true)
+              FileUtil.copy(src_file, hdfs, dest_path, true, hadoopConfig)
+              hdfs.delete(new Path(dest_dir+"."+file_name+".crc"), true)
+              hdfs.delete(new Path(src_path), true)
+            }
+          }
+        )
 
         return
       }
+//      if(options_tmp.getOrElse("is_single",false).equals(true) && (outPut.equalsIgnoreCase("csv") || outPut.equalsIgnoreCase("text")) && model.name().equalsIgnoreCase("overwrite")){
+//
+//        df.foreachPartition(rows=>{
+//          val hdfsWrite=new HdfsWrite()
+//          hdfsWrite.openHdfsFile(path_tmp)
+//          rows.foreach(row=>{
+//            hdfsWrite.writeString(row.getAs[String](cols(0)))
+//          })
+//          hdfsWrite.closeHdfsFile()
+//        })
+//
+//        return
+//      }
 
+      ugi.doAs(
+        new PrivilegedExceptionAction[Unit]{
+          override def run(): Unit = {
+            if (!partitionBy.equals("")) {
+              df.write.format(format).mode(model).partitionBy(partitionBy.mkString(",")).options(options_tmp).save(path_tmp)
+            } else {
+              df.write.format(format).mode(model).options(options_tmp).save(path_tmp)
+            }
+          }
+        }
+      )
       if (!partitionBy.equals("")) {
         df.write.format(format).mode(model).partitionBy(partitionBy.mkString(",")).options(options_tmp).save(path_tmp)
       } else {

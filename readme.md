@@ -67,3 +67,5 @@
    + v5.3.6 无改动仅配合版本变更
    
    + v5.4.0 修复启动jar缺失redisson,hutool
+   
+   + v5.6.3 hdfs支持kerberos认证

@@ -237,11 +237,11 @@ object MariadbCommon {
       logger.info("数据库连接失效,重连成功")
     }
     try {
-      logger.info(s"开始更新zdh_ha_info")
+      logger.debug(s"开始更新zdh_ha_info")
       val update_sql=s"update zdh_ha_info set update_time= '${DateUtil.getCurrentTime()}'"
       val stat_update=connection.prepareStatement(update_sql)
       stat_update.execute()
-      logger.info(s"更新zdh_ha_info")
+      logger.debug(s"更新zdh_ha_info")
 
     } catch {
       case ex: Exception => {

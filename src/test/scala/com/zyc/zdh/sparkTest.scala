@@ -1,9 +1,12 @@
 package com.zyc.zdh
 
+import java.io.File
 import java.sql.{DriverManager, ResultSet, Statement}
 
 import com.zyc.TEST_TRAIT2
 import com.zyc.base.util.{DateUtil, JsonSchemaBuilder}
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
@@ -378,10 +381,29 @@ class sparkTest extends TEST_TRAIT2 {
 
     val ds = spark.range(0, 100).select(col("id"), concat(lit("a"), col("id")) as "name")
 
+    val path_tmp = "/tt1.orc"
+    //ds.write.format("orc").mode(SaveMode.Overwrite).save(path_tmp)
 
-    ds.write.format("orc").mode(SaveMode.Overwrite).save("/tt1")
+    val format = "orc"
+    val src_path = path_tmp+"_single_dir"
+    val dest_path = new Path(path_tmp)
+    val dest_dir = dest_path.getParent.toString
+    val file_name = dest_path.getName
 
-    spark.read.orc("/tt1").show(100, false)
+    println(file_name)
+
+    ds.repartition(1).write.format(format).mode(SaveMode.Overwrite).save(src_path)
+    val hadoopConfig = new Configuration()
+    val hdfs = FileSystem.get(hadoopConfig)
+
+    val src_file = FileUtil.listFiles(new File(src_path)).filter(f=>f.getPath.endsWith("."+format.toLowerCase))(0)
+
+    hdfs.delete(dest_path, true)
+    FileUtil.copy(src_file, hdfs, dest_path, true, hadoopConfig)
+    hdfs.delete(new Path(dest_dir+"."+file_name+".crc"), true)
+    hdfs.delete(new Path(src_path), true)
+
+    spark.read.orc(dest_path.toString).show(100, false)
 
   }
   @Test

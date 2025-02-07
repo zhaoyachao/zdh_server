@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.zyc</groupId>
   <artifactId>zdh_spark</artifactId>
-  <version>5.6.2-RELEASE</version>
+  <version>5.6.3-RELEASE</version>
   <inceptionYear>2022</inceptionYear>
   <properties>
       <scala.version>2.11.12</scala.version>
@@ -556,12 +556,12 @@
       <version>${postgresql.version}</version>
       <scope>compile</scope>
     </dependency>
-    <dependency>
-      <groupId>org.apache.kylin</groupId>
-      <artifactId>kylin-jdbc</artifactId>
-      <version>${kylin-jdbc.version}</version>
-      <scope>compile</scope>
-    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>org.apache.kylin</groupId>-->
+<!--      <artifactId>kylin-jdbc</artifactId>-->
+<!--      <version>${kylin-jdbc.version}</version>-->
+<!--      <scope>compile</scope>-->
+<!--    </dependency>-->
     <dependency>
       <groupId>org.apache.iceberg</groupId>
       <artifactId>iceberg-spark</artifactId>
@@ -637,6 +637,13 @@
       <groupId>org.redisson</groupId>
       <artifactId>redisson</artifactId>
       <version>${redisson.version}</version>
+      <exclusions>
+        <!-- 排除可能冲突的日志依赖 -->
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
